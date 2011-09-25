@@ -1,0 +1,9 @@
+# Gambas Project File 2.0
+# Compiled with Gambas 2.21.0
+Title=RatBox
+Startup=FMain
+Version=0.0.1
+Library=gb.gui
+Library=gb.form
+Library=gb.net
+TabSize=2

@@ -1,0 +1,14 @@
+' Gambas class file
+
+
+PUBLIC SUB PictureBox1_DblClick()
+
+  
+
+END
+
+PUBLIC SUB PictureBox1_MouseDown()
+
+  
+
+END
