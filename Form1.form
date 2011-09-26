@@ -1,0 +1,16 @@
+# Gambas Form File 2.0
+
+{ Form Form
+  MoveScaled(0,0,37,35)
+  Background = &H000000&
+  Mouse = Mouse.Blank
+  Text = ("")
+  Border = Window.None
+  FullScreen = True
+  { PictureBox1 PictureBox
+    MoveScaled(0,0,34,31)
+    Mouse = Mouse.Blank
+    Stretch = True
+    Alignment = Align.Center
+  }
+}

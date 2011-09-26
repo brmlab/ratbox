@@ -77,6 +77,7 @@ PUBLIC SUB BtnKonec_Click()
 END
 
 PUBLIC SUB TimerSystime_Timer()
+WAIT 
   TxtSysTime.Text = Format$(Now, "dd.mm.yy") & "  " & Format$(Now, "hh:nn:ss")
   SysWDT = SysWDT + 1
   IF SysWDT = 11 THEN
@@ -102,7 +103,7 @@ PUBLIC SUB TimerSystime_Timer()
   ELSE 
    CheckBox4.BackColor = Color.Red
   ENDIF 
-
+WAIT 
  IF PotkanAkceBuff = 8 THEN
    CheckBox5.BackColor = Color.Green
   ELSE 
@@ -118,14 +119,16 @@ PUBLIC SUB TimerSystime_Timer()
   ELSE 
    CheckBox7.BackColor = Color.Red
   ENDIF 
-
+WAIT 
 
 
 END
 
 PUBLIC SUB SysLogWrite(Udalost AS String)
   TxtSysLog.Text = Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & udalost & Chr(13) & TxtSysLog.Text
+WAIT 
   PRINT #SysLogFile, Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & udalost 
+WAIT 
 END
 
 PUBLIC SUB WDTLooP()
@@ -245,7 +248,9 @@ PreBtnNastavTimeout_Click
     ExperimentBtnTime3_Click
     ExperimentNastavBtnTime2_Click
     WHILE ((PocetCiklu < PrePocetCiklu) AND (PreStop = FALSE)) 
+ 
     EXPSTART:
+ WAIT 
       IF (ExpChkNahoda.Value = FALSE) AND (ExpChkNeopakovat.Value = FALSE) THEN
         NextVisStim:
         IF VisStimIdx = 6 THEN VisStimIdx = 0
@@ -260,6 +265,7 @@ PreBtnNastavTimeout_Click
       IF ExpChkNahoda.Value = TRUE THEN
         IF ExpChkNeopakovat.Value = TRUE THEN 
           WHILE ExpLastStim = VisStimIdx
+      WAIT 
             RNDNOOPAK:
             SysLogWrite("Experiment_Vybirani_nahodneho_stimulu")
             VisStimIdx = Round(Rnd(1, 6), 0)
@@ -273,6 +279,7 @@ PreBtnNastavTimeout_Click
           WEND 
           ExpLastStim = VisStimIdx
         ELSE 
+         WAIT 
           RNDOPAK:
           SysLogWrite("Experiment_Vybirani_nahodneho_stimulu")
           VisStimIdx = Round(Rnd(1, 6), 0)
@@ -290,6 +297,7 @@ PreBtnNastavTimeout_Click
       SysLogWrite("Experiment_ZOBR_STIMUL: " & VisStimIdx)
       IF (VisStimIdx < 1) OR (VisStimIdx > 6) THEN GOTO EXPSTART
       ExperimentPicture.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp")
+      Form1.stimul("/home/tomsuch/" & Str(VisStimIdx) & ".bmp")
 '      Form1.PictureBox1.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp"))
 '      Form1.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp")
       Label23.Text = VisStimIdx
@@ -336,6 +344,7 @@ PreBtnNastavTimeout_Click
         SysLogWrite("Experiment_ZHAS_STIMUL")
         ExperimentPicture.Picture = Picture.Load("/home/tomsuch/clear.bmp")
 '        Form1.PictureBox1.Picture = Picture.Load("/home/tomsuch/clear.bmp")
+        Form1.stimul("/home/tomsuch/clear.bmp")
         WAIT 
       ENDIF 
       WAIT 
@@ -470,7 +479,7 @@ PreBtnNastavTimeout_Click
   WEND 
   SysLogWrite("Experiment_KONEC")
   ExperimentPicture.Picture = Picture.Load("/home/tomsuch/clear.bmp")
-
+Form1.stimul("/home/tomsuch/clear.bmp")
 ELSE 
 
   PrePocetCiklu = TxtPrePocetCiklu.Text
@@ -487,7 +496,7 @@ PreLastBuffer = 0
 
 
 WHILE ((PocetCiklu < PrePocetCiklu) AND (PreStop = FALSE)) 
-
+WAIT 
 PocetCiklu = PocetCiklu + 1
 
 
@@ -609,7 +618,7 @@ GOTO preapres
 ELSE 
 
 
-
+WAIT 
 ENDIF 
 
 ' PreEaventPotkan = FALSE
@@ -953,5 +962,20 @@ END
 PUBLIC SUB PreBtnNastavTimeout_Click()
 SysLogWrite("Pre_Nastavuji_Timeout: " & Val(TxtPreTimeout.Text))
   PreTimeout = Val(TxtPreTimeout.Text)
+
+END
+
+
+PUBLIC SUB remstart()
+
+BtnPreStart_Click
+
+END 
+
+
+
+PUBLIC SUB BtnExpFull_Click()
+
+   Form1.Visible = TRUE
 
 END

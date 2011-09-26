@@ -725,4 +725,8 @@
     Move(21,42,98,21)
     Text = ("Vypnuti slotu:")
   }
+  { BtnExpFull Button
+    Move(245,378,315,35)
+    Text = ("FULLSCREEN")
+  }
 }
