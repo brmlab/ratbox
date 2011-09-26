@@ -16,13 +16,13 @@
     Alignment = Align.Center
   }
   { TimerSystime #Timer
-    #X = 973
-    #Y = 7
+    #X = 427
+    #Y = 231
     Enabled = True
     Delay = 100
   }
   { TxtSysLog TextArea
-    Move(714,49,518,301)
+    Move(889,49,343,301)
     Text = ("")
     ReadOnly = True
     Wrap = True
@@ -88,23 +88,18 @@
     Text = ("sec")
   }
   { TxtPreTmrPauza TextBox
-    Move(301,294,70,28)
+    Move(301,294,70,21)
     Text = ("10")
     Alignment = Align.Center
   }
   { BtnPreNastavCasPauza Button
-    Move(301,329,70,7)
+    Move(301,322,70,7)
     Text = ("NASTAV")
   }
   { LabelPreFrm5 Label
     Move(441,301,91,14)
     Text = ("<--------------------\n")
     Alignment = Align.Center
-  }
-  { CheckBoxPrePP CheckBox
-    Move(315,63,105,42)
-    ToolTip = ("Vypropaguje nastaveni pitek do ciklu")
-    Text = ("NASTAVENI\nPITEK")
   }
   { LabelPreFrm1 Label
     Move(98,175,70,14)
@@ -139,44 +134,44 @@
     Alignment = Align.Center
   }
   { LabelPreFrm8 Label
-    Move(350,105,28,42)
-    Text = (" |\n |\n")
+    Move(350,91,28,56)
+    Text = (" |\n |\n |")
     Alignment = Align.Center
   }
   { CheckBoxPrePE CheckBox
-    Move(21,56,42,21)
+    Move(21,63,42,21)
     ToolTip = ("Povoli pouziti pitka")
-    Text = ("P1")
+    Text = ("S1")
   }
   { CheckBoxPrePE2 CheckBox
-    Move(21,84,42,21)
+    Move(21,91,42,21)
     ToolTip = ("Povoli pouziti pitka")
-    Text = ("P2")
+    Text = ("S2")
   }
   { CheckBoxPrePE3 CheckBox
-    Move(21,112,42,21)
+    Move(21,119,42,21)
     ToolTip = ("Povoli pouziti pitka")
-    Text = ("P3")
+    Text = ("S3")
   }
   { CheckBoxPrePE4 CheckBox
-    Move(77,56,42,21)
+    Move(77,63,42,21)
     ToolTip = ("Povoli pouziti pitka")
-    Text = ("P4")
+    Text = ("S4")
   }
   { CheckBoxPrePE5 CheckBox
-    Move(77,84,42,21)
+    Move(77,91,42,21)
     ToolTip = ("Povoli pouziti pitka")
-    Text = ("P5")
+    Text = ("S5")
   }
   { CheckBoxPrePE6 CheckBox
-    Move(77,112,42,21)
+    Move(77,119,42,21)
     ToolTip = ("Povoli pouziti pitka")
-    Text = ("P6")
+    Text = ("S6")
   }
   { CheckBoxPrePP2 CheckBox
     Move(154,63,119,28)
     ToolTip = ("Zakaze opakovani stejnych pitek 2x po sobe")
-    Text = ("NEPOAKOVAT")
+    Text = ("NEOPAKOVAT")
   }
   { LabelPreFrm9 Label
     Move(119,70,35,14)
@@ -184,65 +179,61 @@
     Alignment = Align.Center
   }
   { LabelPreFrm10 Label
-    Move(280,70,35,14)
-    Text = ("---")
+    Move(280,70,91,14)
+    Text = ("---------------------")
     Alignment = Align.Center
   }
   { BtnPreStart Button
-    Move(560,70,84,28)
+    Move(812,266,63,28)
     Text = ("START")
   }
   { BtnPreStop Button
-    Move(560,105,84,28)
+    Move(812,301,63,28)
     Text = ("STOP")
   }
   { BtnSZ Button
-    Move(147,224,35,21)
+    Move(168,217,35,21)
     ToolTip = ("Simuluje zacumakovani potkana")
-    Text = ("Z1")
+    Text = ("S1")
   }
   { BtnSZ2 Button
-    Move(189,224,35,21)
+    Move(168,245,35,21)
     ToolTip = ("Simuluje zacumakovani potkana")
-    Text = ("Z2")
+    Text = ("S2")
   }
   { BtnSZ3 Button
-    Move(231,224,35,21)
+    Move(168,273,35,21)
     ToolTip = ("Simuluje zacumakovani potkana")
-    Text = ("Z3")
+    Text = ("S3")
   }
   { BtnSZ4 Button
-    Move(147,252,35,21)
+    Move(210,217,35,21)
     ToolTip = ("Simuluje zacumakovani potkana")
-    Text = ("Z4")
+    Text = ("S4")
   }
   { BtnSZ5 Button
-    Move(189,252,35,21)
+    Move(210,245,35,21)
     ToolTip = ("Simuluje zacumakovani potkana")
-    Text = ("Z5")
+    Text = ("S5")
   }
   { BtnSZ6 Button
-    Move(231,252,35,21)
+    Move(210,273,35,21)
     ToolTip = ("Simuluje zacumakovani potkana")
-    Text = ("Z6")
+    Text = ("S6")
   }
   { TxtPrePocetCiklu TextBox
-    Move(462,84,84,21)
+    Move(714,280,84,21)
     Text = ("10")
     Alignment = Align.Center
   }
   { BtnPrePocetCikluNastav Button
-    Move(462,112,84,21)
+    Move(714,308,84,21)
     Text = ("NASTAV")
   }
   { Label5 Label
-    Move(462,63,84,14)
-    Text = ("Pocet ciklu:")
+    Move(714,259,84,14)
+    Text = ("Pocet cyklu:")
     Alignment = Align.Center
-  }
-  { BtnPreNastavNastaveniPitek Button
-    Move(133,105,210,21)
-    Text = ("NASTAV NASTAVENI PITEK")
   }
   { TxtPreWDTTmr TextBox
     Move(399,7,70,21)
@@ -502,8 +493,8 @@
     Alignment = Align.Center
   }
   { ExpTmrTimeout #Timer
-    #X = 924
-    #Y = 7
+    #X = 378
+    #Y = 231
   }
   { TxtTimeout TextBox
     Move(553,7,70,21)
@@ -523,15 +514,15 @@
     Text = ("Pripoj BOX")
   }
   { SerialPort1 #SerialPort
-    #X = 875
-    #Y = 7
+    #X = 329
+    #Y = 231
   }
   { Separator1 Separator
     Move(14,35,1218,7)
     Foreground = &H000000&
   }
   { Separator2 Separator
-    Move(14,357,1218,21)
+    Move(7,357,1218,21)
   }
   { Separator3 Separator
     Move(700,49,7,301)
@@ -667,8 +658,71 @@
     Move(119,406,119,21)
     Text = ("NEOPAKOVAT")
   }
-  { Button1 Button
-    Move(721,385,119,28)
-    Text = ("Button1")
+  { BtnOpenDor Button
+    Move(735,98,35,21)
+    Text = ("OD")
+  }
+  { BtnCloseDor Button
+    Move(777,98,35,21)
+    Text = ("CD")
+  }
+  { BtnReset Button
+    Move(819,98,35,21)
+    Text = ("RB")
+  }
+  { BtnPitS Button
+    Move(756,133,35,21)
+    Text = ("S1")
+  }
+  { BtnPitS2 Button
+    Move(756,161,35,21)
+    Text = ("S2")
+  }
+  { BtnPitS3 Button
+    Move(756,189,35,21)
+    Text = ("S3")
+  }
+  { BtnPitS4 Button
+    Move(805,133,35,21)
+    Text = ("S4")
+  }
+  { BtnPitS5 Button
+    Move(805,161,35,21)
+    Text = ("S5")
+  }
+  { BtnPitS6 Button
+    Move(805,189,35,21)
+    Text = ("S6")
+  }
+  { Label32 Label
+    Move(728,49,140,42)
+    Text = ("Manu\xC3\xA1ln\xC3\xAD ovl\xC3\xA1d\xC3\xA1n\xC3\xAD\naparatury")
+    Alignment = Align.Center
+  }
+  { Separator4 Separator
+    Move(714,231,175,7)
+  }
+  { TxtPreTimeout TextBox
+    Move(553,84,70,28)
+    Text = ("30")
+    Alignment = Align.Center
+  }
+  { Label33 Label
+    Move(637,84,28,28)
+    Text = ("sec")
+    Alignment = Align.Center
+  }
+  { PreBtnNastavTimeout Button
+    Move(553,119,70,21)
+    Text = ("NASTAV")
+  }
+  { PreChkTimeout CheckBox
+    Move(553,56,126,14)
+    Text = ("CAS NA REAKCI")
+    Value = CheckBox.True
+  }
+  { Label34 Label
+    Move(21,42,98,21)
+    Text = ("Vypnuti slotu:")
   }
 }

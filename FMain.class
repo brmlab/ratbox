@@ -45,6 +45,9 @@ PUBLIC ExpLastStim AS Integer
 PUBLIC ExpGenerujStimul AS Boolean
 PUBLIC ExpTemp AS Integer
 
+PUBLIC PreTimeout AS Integer
+
+PUBLIC PreLastBuffer AS Integer
 
 PUBLIC SUB _new()
 
@@ -159,7 +162,7 @@ DIM StrTmp AS String
   PreP4E = CheckBoxPrePE4.Value
   PreP5E = CheckBoxPrePE5.Value
   PreP6E = CheckBoxPrePE6.Value
-  PrePNE = CheckBoxPrePP.Value
+'  PrePNE = CheckBoxPrePP.Value
   PrePOD = CheckBoxPrePP2.Value
   IF PreP1E = TRUE THEN StrTmp = StrTmp & "1"
   IF PreP1E = FALSE THEN StrTmp = StrTmp & "0"
@@ -182,39 +185,47 @@ DIM StrTmp AS String
 END
 
 PUBLIC SUB BtnSZ_Click()
-  PreEaventPotkan = TRUE
-  PreEaventZ1 = TRUE
+ExpZ = 1
+'  PreEaventPotkan = TRUE
+'  PreEaventZ1 = TRUE
 END
 
 PUBLIC SUB BtnSZ2_Click()
-  PreEaventPotkan = TRUE
-  PreEaventZ2 = TRUE
+ExpZ = 2
+'  PreEaventPotkan = TRUE
+'  PreEaventZ2 = TRUE
 END
 
 PUBLIC SUB BtnSZ3_Click()
-  PreEaventPotkan = TRUE
-  PreEaventZ3 = TRUE
+ExpZ = 3
+'  PreEaventPotkan = TRUE
+'  PreEaventZ3 = TRUE
 END
 
 PUBLIC SUB BtnSZ4_Click()
-  PreEaventPotkan = TRUE
-  PreEaventZ4 = TRUE
+ExpZ = 4
+'  PreEaventPotkan = TRUE
+'  PreEaventZ4 = TRUE
 END
 
 PUBLIC SUB BtnSZ5_Click()
-  PreEaventPotkan = TRUE
-  PreEaventZ5 = TRUE
+ExpZ = 5
+'  PreEaventPotkan = TRUE
+'  PreEaventZ5 = TRUE
 END
 
 PUBLIC SUB BtnSZ6_Click()
-  PreEaventPotkan = TRUE
-  PreEaventZ6 = TRUE
+ExpZ = 6
+'  PreEaventPotkan = TRUE
+'  PreEaventZ6 = TRUE
 END
 
 PUBLIC SUB BtnPreStart_Click()
 DIM PotkanAkceTMP AS Integer
 DIM PocetCiklu AS Integer
+PreLastBuffer = 0
   PocetCiklu = 0
+PreBtnNastavTimeout_Click
   IF CheckBoxExpVisEn.Value = TRUE THEN 
     SysLogWrite("Experiment_START")
     VisStimIdx = 0
@@ -279,7 +290,8 @@ DIM PocetCiklu AS Integer
       SysLogWrite("Experiment_ZOBR_STIMUL: " & VisStimIdx)
       IF (VisStimIdx < 1) OR (VisStimIdx > 6) THEN GOTO EXPSTART
       ExperimentPicture.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp")
-      PictureBox1.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp"))
+'      Form1.PictureBox1.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp"))
+'      Form1.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp")
       Label23.Text = VisStimIdx
       SysLogWrite("Experiment_PAUZA_1")
       IF ExpChkEnableTiming.Value = FALSE THEN 
@@ -323,7 +335,7 @@ DIM PocetCiklu AS Integer
       IF ExperimentCheckZhasniStimul.Value = TRUE THEN
         SysLogWrite("Experiment_ZHAS_STIMUL")
         ExperimentPicture.Picture = Picture.Load("/home/tomsuch/clear.bmp")
-        Form1.PictureBox1.Picture = Picture.Load("/home/tomsuch/clear.bmp")
+'        Form1.PictureBox1.Picture = Picture.Load("/home/tomsuch/clear.bmp")
         WAIT 
       ENDIF 
       WAIT 
@@ -468,7 +480,7 @@ ELSE
   PreCasPauza = TxtPreTmrPauza.Text
   SysLogWrite("Pre_Cas_Pauza: " & PreCasPauza)
 BtnPreNastavNastaveniPitek_Click
-
+PreLastBuffer = 0
 
   SysLogWrite("Pre_START")
 
@@ -484,6 +496,15 @@ PocetCiklu = PocetCiklu + 1
   SysLogWrite("Pre_Otevreni_Dvirek")
 
   LabelPre.Background = Color.Green 
+
+    IF SerialPort1.status = 1 THEN 
+      SysLogWrite("Pre_SYSTEM_BOX_OK")
+      WRITE #SerialPort1, "D"
+    ELSE 
+      SysLogWrite("Pre_SYSTEM_BOX_CHYBA")
+    ENDIF 
+
+
 
   PreCntTmp = 0
   PreCnt = TRUE
@@ -503,22 +524,121 @@ PocetCiklu = PocetCiklu + 1
 
   LabelPre2.Background = Color.Green
 
-  WHILE PreEaventPotkan = FALSE
-  WAIT 
-  WEND 
+
+precekejakci:
+WAIT 
+IF PreChkTimeout.Value = TRUE THEN 
+WAIT 
+     ExpZ = 0
+      ExpTmrTimeout.Enabled = FALSE
+      ExpTimeoutBuff = 0
+      ExpTmrTimeout.Enabled = TRUE
+       WHILE (ExpZ < 1) AND (ExpTimeoutBuff < PreTimeout)
+        IF PotkanAkceBuff = 1 THEN ExpZ = 1
+        IF PotkanAkceBuff = 2 THEN ExpZ = 2
+        IF PotkanAkceBuff = 4 THEN ExpZ = 3
+        IF PotkanAkceBuff = 8 THEN ExpZ = 4
+        IF PotkanAkceBuff = 16 THEN ExpZ = 5
+        IF PotkanAkceBuff = 32 THEN ExpZ = 6
+        WAIT 
+      WEND 
+ELSE 
+WAIT
+ ExpZ = 0
+       WHILE (ExpZ < 1)
+        IF PotkanAkceBuff = 1 THEN ExpZ = 1
+        IF PotkanAkceBuff = 2 THEN ExpZ = 2
+        IF PotkanAkceBuff = 4 THEN ExpZ = 3
+        IF PotkanAkceBuff = 8 THEN ExpZ = 4
+        IF PotkanAkceBuff = 16 THEN ExpZ = 5
+        IF PotkanAkceBuff = 32 THEN ExpZ = 6
+        WAIT 
+      WEND 
+ENDIF 
+
+SysLogWrite("Pre_Potkan_Akce:" & ExpZ)
+
+IF CheckBoxPrePP2.Value = TRUE THEN 
+WAIT 
+IF PreLastBuffer = ExpZ THEN SysLogWrite("Pre_Potkan_Opakovani_Volby: " & ExpZ)
+WAIT 
+IF PreLastBuffer = ExpZ THEN GOTO precekejakci
+WAIT 
+ENDIF 
+
+PreLastBuffer = ExpZ
+
+
+IF (CheckBoxPrePE.Value = TRUE) AND (ExpZ = 1) THEN
+SysLogWrite("Pre_Potkan_Zakazana_Volba")
+GOTO precekejakci 
+ENDIF 
+
+IF (CheckBoxPrePE2.Value = TRUE) AND (ExpZ = 2) THEN
+SysLogWrite("Pre_Potkan_Zakazana_Volba")
+ GOTO precekejakci 
+ENDIF 
+
+IF (CheckBoxPrePE3.Value = TRUE) AND (ExpZ = 3) THEN
+SysLogWrite("Pre_Potkan_Zakazana_Volba")
+ GOTO precekejakci
+ ENDIF 
+
+IF (CheckBoxPrePE4.Value = TRUE) AND (ExpZ = 4) THEN
+SysLogWrite("Pre_Potkan_Zakazana_Volba")
+ GOTO precekejakci 
+ENDIF 
+
+IF (CheckBoxPrePE5.Value = TRUE) AND (ExpZ = 5) THEN
+SysLogWrite("Pre_Potkan_Zakazana_Volba")
+ GOTO precekejakci 
+ENDIF 
+
+IF (CheckBoxPrePE6.Value = TRUE) AND (ExpZ = 6) THEN
+SysLogWrite("Pre_Potkan_Zakazana_Volba")
+ GOTO precekejakci 
+ENDIF 
+
+
+IF ExpTimeoutBuff >= PreTimeout THEN
+SysLogWrite("Pre_POTKAN_TIMEOUT")
+ExpTmrTimeout.Enabled = FALSE
+ExpTimeoutBuff = 0
+LabelPre2.Background = Color.Background
+GOTO preapres
+ELSE 
 
 
 
-  PreEaventPotkan = FALSE
+ENDIF 
+
+' PreEaventPotkan = FALSE
   LabelPre2.Background = Color.Background
 
-PotkanAkceTMP = AkcePotkan()
 
-SysLogWrite("Pre_Potkan_Akce:" & PotkanAkceTMP)
 
-SysLogWrite("Pre_Nastavuji_Pitko:" & PotkanAkceTMP)
+'PotkanAkceTMP = AkcePotkan()
+
+
+
+SysLogWrite("Pre_Nastavuji_Pitko:" & ExpZ)
 
 LabelPre3.Background = Color.Green
+
+
+        IF SerialPort1.Status = 1 THEN 
+          SysLogWrite("Pre_SYSTEM_BOX_OK")
+          IF VisStimIdx = 1 THEN WRITE #SerialPort1, "s1"
+          IF VisStimIdx = 2 THEN WRITE #SerialPort1, "s2"
+          IF VisStimIdx = 3 THEN WRITE #SerialPort1, "s3"
+          IF VisStimIdx = 4 THEN WRITE #SerialPort1, "S1"
+          IF VisStimIdx = 5 THEN WRITE #SerialPort1, "S2"
+          IF VisStimIdx = 6 THEN WRITE #SerialPort1, "S3"
+        ELSE 
+          SysLogWrite("Pre_SYSTEM_BOX_CHYBA")
+        ENDIF 
+
+
 
   PreCntTmp = 0
   PreCnt = TRUE
@@ -548,9 +668,22 @@ TxtPreTmrPiti.Background = Color.Green
 
 TxtPreTmrPiti.Background = Color.White
 
-LabelPre5.Background = Color.Green
+preapres:
 
-SysLogWrite("Pre_Zavreni_Dveri")
+
+LabelPre5.Background = Color.Green
+LabelPre4.Background = Color.Green
+
+SysLogWrite("Pre_Reset_Aparatury")
+
+    IF SerialPort1.status = 1 THEN 
+      SysLogWrite("Pre_SYSTEM_BOX_OK")
+      WRITE #SerialPort1, "S0"
+      WRITE #SerialPort1, "s0"
+      WRITE #SerialPort1, "d"
+    ELSE 
+      SysLogWrite("Pre_SYSTEM_BOX_CHYBA")
+    ENDIF 
 
   PreCntTmp = 0
   PreCnt = TRUE
@@ -562,19 +695,8 @@ SysLogWrite("Pre_Zavreni_Dveri")
     TxtPreWDTTmr.Text = 0
       
 LabelPre5.Background = Color.Background
-
-LabelPre4.Background = Color.Green
-SysLogWrite("Pre_Parkuji_Pitka")
-  PreCntTmp = 0
-  PreCnt = TRUE
-  WHILE PreCntTmp < 3
-  WAIT 
-  TxtPreWDTTmr.Text = PreCntTmp
-  WAIT 
-  WEND  
-  TxtPreWDTTmr.Text = 0
-  
 LabelPre4.Background = Color.Background
+
 
 SysLogWrite("Pre_Pauza")
 
@@ -726,8 +848,110 @@ Message("TEST")
 END SELECT
 END
 
-PUBLIC SUB Button1_Click()
+PUBLIC SUB BtnReset_Click()
 
-  Form1.Visible = TRUE
+  IF SerialPort1.status = 1 THEN 
+      SysLogWrite("BOX_RESET")
+      WRITE #SerialPort1, "S0"
+      WRITE #SerialPort1, "s0"
+      WRITE #SerialPort1, "d"
+    ELSE 
+      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+    ENDIF 
+
+END
+
+PUBLIC SUB BtnOpenDor_Click()
+
+  IF SerialPort1.Status = 1 THEN
+        SysLogWrite("BOX_OPEN")
+        WRITE #SerialPort1, "D"
+      ELSE 
+        SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+      ENDIF 
+
+END
+
+PUBLIC SUB BtnCloseDor_Click()
+
+  IF SerialPort1.status = 1 THEN 
+      SysLogWrite("BOX_CLOSE")
+      WRITE #SerialPort1, "d"
+    ELSE 
+      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+    ENDIF 
+
+END
+
+PUBLIC SUB BtnPitS6_Click()
+
+   IF SerialPort1.status = 1 THEN 
+      SysLogWrite("BOX_SLOT6")
+      WRITE #SerialPort1, "S3"
+    ELSE 
+      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+    ENDIF
+
+END
+
+PUBLIC SUB BtnPitS_Click()
+
+   IF SerialPort1.status = 1 THEN 
+      SysLogWrite("BOX_SLOT1")
+      WRITE #SerialPort1, "s1"
+    ELSE 
+      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+    ENDIF 
+
+
+END
+
+PUBLIC SUB BtnPitS2_Click()
+
+   IF SerialPort1.status = 1 THEN 
+      SysLogWrite("BOX_SLOT2")
+      WRITE #SerialPort1, "s2"
+    ELSE 
+      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+    ENDIF
+
+END
+
+PUBLIC SUB BtnPitS3_Click()
+
+   IF SerialPort1.status = 1 THEN 
+      SysLogWrite("BOX_SLOT3")
+      WRITE #SerialPort1, "s3"
+    ELSE 
+      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+    ENDIF
+
+END
+
+PUBLIC SUB BtnPitS4_Click()
+
+   IF SerialPort1.status = 1 THEN 
+      SysLogWrite("BOX_SLOT4")
+      WRITE #SerialPort1, "S1"
+    ELSE 
+      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+    ENDIF
+
+END
+
+PUBLIC SUB BtnPitS5_Click()
+
+   IF SerialPort1.status = 1 THEN 
+      SysLogWrite("BOX_SLOT5")
+      WRITE #SerialPort1, "S2"
+    ELSE 
+      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
+    ENDIF
+
+END
+
+PUBLIC SUB PreBtnNastavTimeout_Click()
+SysLogWrite("Pre_Nastavuji_Timeout: " & Val(TxtPreTimeout.Text))
+  PreTimeout = Val(TxtPreTimeout.Text)
 
 END
