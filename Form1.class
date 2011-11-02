@@ -14,10 +14,25 @@ PUBLIC SUB stimul(xxx AS String)
   WAIT 
 END
 
+PUBLIC SUB loginfo(aaa AS String)
+  
+  Label1.Text = aaa
+  
+END
+
+PUBLIC SUB cyklusinfo(bbb AS String)
+  
+  label2.Text = bbb
+  
+END
+
+
 
 PUBLIC SUB PictureBox1_DblClick()
-
+  Form1.FullScreen = FALSE
   Form1.Visible = FALSE
+  FMain.Visible = TRUE
+  Form1.Close
 WAIT 
 END
 

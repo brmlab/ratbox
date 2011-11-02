@@ -1,16 +1,28 @@
 # Gambas Form File 2.0
 
 { Form Form
-  MoveScaled(0,0,37,35)
+  MoveScaled(0,0,149,64)
   Background = &H000000&
   Mouse = Mouse.Blank
   Text = ("")
   Border = Window.None
   FullScreen = True
   { PictureBox1 PictureBox
-    MoveScaled(0,0,34,31)
+    MoveScaled(2,2,34,31)
     Mouse = Mouse.Blank
     Stretch = True
     Alignment = Align.Center
+  }
+  { Label1 Label
+    MoveScaled(1,1,60,2)
+    Font = Font["-1"]
+    Foreground = &HE0E0E0&
+    Text = ("")
+  }
+  { Label2 Label
+    MoveScaled(62,1,45,2)
+    Font = Font["-1"]
+    Foreground = &HE0E0E0&
+    Text = ("")
   }
 }

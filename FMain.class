@@ -1,75 +1,77 @@
 ' Gambas class file
-PUBLIC SysLogFile AS File
-PUBLIC SysWDT AS Integer
+PUBLIC konfigurace_timeout_status AS Boolean
+PUBLIC konfigurace_timeout AS Integer
+PUBLIC konfigurace_pocet_cyklu AS Integer
 
-PUBLIC PrePocetCiklu AS Integer
-PUBLIC PreCasPauza AS Integer
-PUBLIC PreCasPiti AS Integer
+PUBLIC konfigurace_prelearning_cas_piti AS Integer
+PUBLIC konfigurace_prelearning_cas_dalsi_ciklus AS Integer
+PUBLIC konfigurace_prelearning_neopakovat AS Boolean
+PUBLIC konfigurace_prelearning_pauza AS Boolean
 
-PUBLIC PreEaventZ1 AS Boolean
-PUBLIC PreEaventZ2 AS Boolean
-PUBLIC PreEaventZ3 AS Boolean
-PUBLIC PreEaventZ4 AS Boolean
-PUBLIC PreEaventZ5 AS Boolean
-PUBLIC PreEaventZ6 AS Boolean
+PUBLIC konfigurace_experiment_cas_zobrazeni_stimulu AS Integer
+PUBLIC konfigurace_experiment_cas_zhasnuteho_stimulu AS Integer
+PUBLIC konfigurace_experiment_cas_piti AS Integer
+PUBLIC konfigurace_experiment_cas_dalsi_ciklus AS Integer
+PUBLIC konfigurace_experiment_nahoda AS Boolean
+PUBLIC konfigurace_experiment_neopakovat AS Boolean
+PUBLIC konfigurace_experiment_vypni_stimul AS Boolean
+PUBLIC konfigurace_experiment_vypni_stimul_pauza_enable AS Boolean
+PUBLIC konfigurace_experiment_casovani AS Boolean
 
-PUBLIC PreEaventPotkan AS Boolean
+PUBLIC konfigurace_experiment_slot_enable_1 AS Boolean
+PUBLIC konfigurace_experiment_slot_enable_2 AS Boolean
+PUBLIC konfigurace_experiment_slot_enable_3 AS Boolean
+PUBLIC konfigurace_experiment_slot_enable_4 AS Boolean
+PUBLIC konfigurace_experiment_slot_enable_5 AS Boolean
+PUBLIC konfigurace_experiment_slot_enable_6 AS Boolean
 
-PUBLIC PreStop AS Boolean
+PUBLIC konfigurace_experiment_casovani_s1 AS Integer
+PUBLIC konfigurace_experiment_casovani_s2 AS Integer
+PUBLIC konfigurace_experiment_casovani_s3 AS Integer
+PUBLIC konfigurace_experiment_casovani_s4 AS Integer
+PUBLIC konfigurace_experiment_casovani_s5 AS Integer
+PUBLIC konfigurace_experiment_casovani_s6 AS Integer
 
-PUBLIC PreP1E AS Boolean
-PUBLIC PreP2E AS Boolean
-PUBLIC PreP3E AS Boolean
-PUBLIC PreP4E AS Boolean
-PUBLIC PreP5E AS Boolean
-PUBLIC PreP6E AS Boolean
+PUBLIC stav_sloty AS Integer
+PUBLIC simulace_zacenichani AS Boolean
+PUBLIC mod_idx AS Integer
+PUBLIC buffer_casovac AS Integer
+PUBLIC status_casovac AS Boolean
+PUBLIC buffer_timeout AS Integer
+PUBLIC buffer_sloty_aktual_state AS Integer
+PUBLIC buffer_sloty_last_state AS Integer
+PUBLIC InputBuffer_TMP AS Integer
+PUBLIC InputBlock AS Boolean
+PUBLIC STOP_State AS Boolean
+PUBLIC tmp_cyklus AS Integer
+PUBLIC tmp_stimul_idx AS Integer
+PUBLIC tmp_stimul_last AS Integer
+PUBLIC tmp_mils AS Long
 
-PUBLIC PrePNE AS Boolean
-PUBLIC PrePOD AS Boolean
-
-PUBLIC PreCnt AS Boolean
-PUBLIC PreCntTmp AS Integer
-
-
-PUBLIC VisStimIdx AS Integer
-PUBLIC ExpTime0 AS Integer
-PUBLIC ExpTime1 AS Integer
-PUBLIC ExpTime2 AS Integer
-PUBLIC ExpTime3 AS Integer
-PUBLIC ExpZ AS Integer
-PUBLIC ExpTimeout AS Integer
-PUBLIC ExpTimeoutBuff AS Integer
-PUBLIC PotkanAkceBuff AS Integer
-
-PUBLIC ExpLastStim AS Integer
-PUBLIC ExpGenerujStimul AS Boolean
-PUBLIC ExpTemp AS Integer
-
-PUBLIC PreTimeout AS Integer
-
-PUBLIC PreLastBuffer AS Integer
-
-PUBLIC SUB _new()
-
-END
 
 PUBLIC SUB Form_Open()
-  PreStop = FALSE
-  SysLogFile = OPEN "/home/tomsuch/Projekty/Gambas2/RatBox/RatBox.log" FOR APPEND
-  SysLogWrite("Start_Systemu")
-  PreCasPauza = 10
-  PreCasPiti = 10
-  PrePocetCiklu = 10
-  VisStimIdx = 1
-  SysLogWrite("Pre_Pocet_Ciklu: " & PrePocetCiklu)
-  SysLogWrite("Pre_Cas_Piti: " & PreCasPiti)
-  SysLogWrite("Pre_Cas_Pauza: " & PreCasPauza)
+  FMain.Visible = TRUE
+  FMain.FullScreen = TRUE
+  SysLogWrite("Startuji_System.........")
+  SysLogWrite("NAHRANI_PARAMETRU")
+  DefKonfLoad()
+  SysLogWrite("UPLATNENI_PARAMETRU")
+  UplatniParametry()
+  VypisParametry()
+  SysLogWrite("System_nastartovan")
+  CfgList()
 END
 
 PUBLIC SUB BtnKonec_Click()
   SysLogWrite("Dotaz_Ukonceni_Aplikace")
   IF Message.Warning("Opravdu chcete ukoncit aplikaci ?", "NE", "ANO") = 2 THEN 
-    SysLogWrite("Ukonceni_Behu_Aplikace")
+    SysLogWrite("Ukoncovani_Behu_Aplikace")
+    TimerSystime.Enabled = FALSE
+    Form1.Close
+    FINALLY 
+    IF SerialPort1.Status <> 0 THEN SerialPort1.Close
+    SysLogWrite("Konec_Systemu")
+    Form1.Close
     FMain.Close
   ELSE 
     SysLogWrite("Navrat_Do_Aplikace")
@@ -77,749 +79,76 @@ PUBLIC SUB BtnKonec_Click()
 END
 
 PUBLIC SUB TimerSystime_Timer()
-WAIT 
+  WAIT 
+  PosliInfo()
+  TxtInfoCyklus.Text = Str(tmp_cyklus)  
   TxtSysTime.Text = Format$(Now, "dd.mm.yy") & "  " & Format$(Now, "hh:nn:ss")
-  SysWDT = SysWDT + 1
-  IF SysWDT = 11 THEN
-    WDTLooP
-    SysWDT = 0
-  ENDIF 
-  TxtWDT.Text = SysWDT
-  TxtTimeout.Text = ExpTimeoutBuff
+  WAIT 
   IF SerialPort1.Status = 0 THEN TxtCommPort.BackColor = Color.Red
+  WAIT 
   IF SerialPort1.Status = 1 THEN TxtCommPort.BackColor = Color.Green
-  IF PotkanAkceBuff = 1 THEN
-   CheckBox2.BackColor = Color.Green
+  WAIT 
+  VypisStavSlotu()
+  IF TxtWDT.BackColor = Color.Red THEN 
+    TxtWDT.BackColor = Color.Green
   ELSE 
-   CheckBox2.BackColor = Color.Red
+    TxtWDT.BackColor = Color.Red
   ENDIF 
-  IF PotkanAkceBuff = 2 THEN
-   CheckBox3.BackColor = Color.Green
-  ELSE 
-   CheckBox3.BackColor = Color.Red
+  FINALLY 
+  IF ERROR THEN 
+    ErrLogWrite("NESYNCHRONI_UKONCENI_TimerSystime_Timer() - " & Error.Text)
   ENDIF 
-  IF PotkanAkceBuff = 4 THEN
-   CheckBox4.BackColor = Color.Green
-  ELSE 
-   CheckBox4.BackColor = Color.Red
-  ENDIF 
-WAIT 
- IF PotkanAkceBuff = 8 THEN
-   CheckBox5.BackColor = Color.Green
-  ELSE 
-   CheckBox5.BackColor = Color.Red
-  ENDIF 
-  IF PotkanAkceBuff = 16 THEN
-   CheckBox6.BackColor = Color.Green
-  ELSE 
-   CheckBox6.BackColor = Color.Red
-  ENDIF 
-  IF PotkanAkceBuff = 32 THEN
-   CheckBox7.BackColor = Color.Green
-  ELSE 
-   CheckBox7.BackColor = Color.Red
-  ENDIF 
-WAIT 
-
-
 END
 
 PUBLIC SUB SysLogWrite(Udalost AS String)
+DIM SysLogFile AS File
+  SysLogFile = OPEN "/ratbox/log/system.log" FOR APPEND
   TxtSysLog.Text = Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & udalost & Chr(13) & TxtSysLog.Text
-WAIT 
+  WAIT 
   PRINT #SysLogFile, Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & udalost 
-WAIT 
+  WAIT 
+  SysLogFile.Close
 END
 
-PUBLIC SUB WDTLooP()
-  IF TxtWDT.Background = Color.Green THEN 
-    TxtWDT.Background = Color.Background
+PUBLIC SUB ErrLogWrite(Udalost AS String)
+DIM SysLogFile AS File
+  SysLogFile = OPEN "/ratbox/log/err.log" FOR APPEND
+  PRINT #SysLogFile, Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & udalost 
+  SysLogFile.Close
+END
+
+PUBLIC SUB ExpLogWrite(Udalost AS String)
+DIM SysLogFile AS File
+  IF Exist("/ratbox/log/last_experiment.log") = TRUE THEN 
+    SysLogFile = OPEN "/ratbox/log/last_experiment.log" FOR APPEND
+    PRINT #SysLogFile, Str(tmp_mils) & ";" & Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & ";" & udalost 
+    Form1.loginfo(Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & udalost)
+    SysLogFile.Close
+  ENDIF 
+END
+
+PUBLIC SUB ExpLogInit()
+ DIM SysLogFile AS File
+    SysLogWrite("GENERUJI_LOG_EXPERIMENTU") 
+  IF Exist("/ratbox/log/last_experiment.log") = TRUE THEN 
+    SHELL ("mv /ratbox/log/last_experiment.log /ratbox/log/last_experiment.log.backup")
+    SHELL ("touch /ratbox/log/last_experiment.log")
   ELSE 
-    TxtWDT.Background = Color.Green
+    SHELL ("touch /ratbox/log/last_experiment.log")
   ENDIF 
-  IF PreCnt = TRUE THEN 
-    PreCntTmp = PreCntTmp + 1
-  ENDIF 
+    SysLogWrite("ZAPISUJI_HLAVICKU_LOGU_EXPERIMENTU")
+    SysLogFile = OPEN "/ratbox/log/last_experiment.log" FOR APPEND
+    PRINT #SysLogFile, Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") 
+    PRINT #SysLogFile, TxtExperimentID.Text
+    PRINT #SysLogFile, TxtPotkanID.Text 
+    PRINT #SysLogFile, "-----------------------------------------------------------" 
+    SysLogFile.Close
 END
 
-PUBLIC SUB BtnPrePocetCikluNastav_Click()
-  PrePocetCiklu = TxtPrePocetCiklu.Text
-  SysLogWrite("Pre_Pocet_Ciklu: " & PrePocetCiklu)
-END
 
-PUBLIC SUB BtnPreNastavCasPiti_Click()
-  PreCasPiti = TxtPreTmrPiti.Text
-  SysLogWrite("Pre_Cas_Piti: " & PreCasPiti)
-END
-
-PUBLIC SUB BtnPreNastavCasPauza_Click()
-  PreCasPauza = TxtPreTmrPauza.Text
-  SysLogWrite("Pre_Cas_Pauza: " & PreCasPauza)
-END
-
-PUBLIC SUB BtnPreNastavNastaveniPitek_Click()
-DIM StrTmp AS String
-  PreP1E = CheckBoxPrePE.Value
-  PreP2E = CheckBoxPrePE2.Value
-  PreP3E = CheckBoxPrePE3.Value
-  PreP4E = CheckBoxPrePE4.Value
-  PreP5E = CheckBoxPrePE5.Value
-  PreP6E = CheckBoxPrePE6.Value
-'  PrePNE = CheckBoxPrePP.Value
-  PrePOD = CheckBoxPrePP2.Value
-  IF PreP1E = TRUE THEN StrTmp = StrTmp & "1"
-  IF PreP1E = FALSE THEN StrTmp = StrTmp & "0"
-  IF PreP2E = TRUE THEN StrTmp = StrTmp & "1"
-  IF PreP2E = FALSE THEN StrTmp = StrTmp & "0"
-  IF PreP3E = TRUE THEN StrTmp = StrTmp & "1"
-  IF PreP3E = FALSE THEN StrTmp = StrTmp & "0"
-  IF PreP4E = TRUE THEN StrTmp = StrTmp & "1"
-  IF PreP4E = FALSE THEN StrTmp = StrTmp & "0"
-  IF PreP5E = TRUE THEN StrTmp = StrTmp & "1"
-  IF PreP5E = FALSE THEN StrTmp = StrTmp & "0"
-  IF PreP6E = TRUE THEN StrTmp = StrTmp & "1"
-  IF PreP6E = FALSE THEN StrTmp = StrTmp & "0"
-  StrTmp = StrTmp & "_"
-  IF PrePOD = TRUE THEN StrTmp = StrTmp & "1"
-  IF PrePOD = FALSE THEN StrTmp = StrTmp & "0"
-  IF PrePNE = TRUE THEN StrTmp = StrTmp & "1"
-  IF PrePNE = FALSE THEN StrTmp = StrTmp & "0"
-  SysLogWrite("Pre_N_Pitka: " & StrTmp)
-END
-
-PUBLIC SUB BtnSZ_Click()
-ExpZ = 1
-'  PreEaventPotkan = TRUE
-'  PreEaventZ1 = TRUE
-END
-
-PUBLIC SUB BtnSZ2_Click()
-ExpZ = 2
-'  PreEaventPotkan = TRUE
-'  PreEaventZ2 = TRUE
-END
-
-PUBLIC SUB BtnSZ3_Click()
-ExpZ = 3
-'  PreEaventPotkan = TRUE
-'  PreEaventZ3 = TRUE
-END
-
-PUBLIC SUB BtnSZ4_Click()
-ExpZ = 4
-'  PreEaventPotkan = TRUE
-'  PreEaventZ4 = TRUE
-END
-
-PUBLIC SUB BtnSZ5_Click()
-ExpZ = 5
-'  PreEaventPotkan = TRUE
-'  PreEaventZ5 = TRUE
-END
-
-PUBLIC SUB BtnSZ6_Click()
-ExpZ = 6
-'  PreEaventPotkan = TRUE
-'  PreEaventZ6 = TRUE
-END
-
-PUBLIC SUB BtnPreStart_Click()
-DIM PotkanAkceTMP AS Integer
-DIM PocetCiklu AS Integer
-PreLastBuffer = 0
-  PocetCiklu = 0
-PreBtnNastavTimeout_Click
-  IF CheckBoxExpVisEn.Value = TRUE THEN 
-    SysLogWrite("Experiment_START")
-    VisStimIdx = 0
-    ExpLastStim = 1
-    SysLogWrite("Experiment_RESET_APARATURY")
-    IF SerialPort1.Status = 1 THEN 
-      SysLogWrite("Experiment_SYSTEM_BOX_OK")
-      WRITE #SerialPort1, "S0"
-      WRITE #SerialPort1, "s0"
-      WRITE #SerialPort1, "d"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF
-    BtnExperimentNastavTime0_Click
-    ExperimentBtnNastavTime1_Click
-    ExperimentBtnTimeout_Click
-    ExperimentBtnTime3_Click
-    ExperimentNastavBtnTime2_Click
-    WHILE ((PocetCiklu < PrePocetCiklu) AND (PreStop = FALSE)) 
- 
-    EXPSTART:
- WAIT 
-      IF (ExpChkNahoda.Value = FALSE) AND (ExpChkNeopakovat.Value = FALSE) THEN
-        NextVisStim:
-        IF VisStimIdx = 6 THEN VisStimIdx = 0
-        VisStimIdx = VisStimIdx + 1
-        IF (VisStimIdx = 1) AND (ExpChkSTime.Value = FALSE) THEN GOTO NextVisStim
-        IF (VisStimIdx = 2) AND (ExpChkSTime2.Value = FALSE) THEN GOTO NextVisStim
-        IF (VisStimIdx = 3) AND (ExpChkSTime3.Value = FALSE) THEN GOTO NextVisStim
-        IF (VisStimIdx = 4) AND (ExpChkSTime4.Value = FALSE) THEN GOTO NextVisStim
-        IF (VisStimIdx = 5) AND (ExpChkSTime5.Value = FALSE) THEN GOTO NextVisStim
-        IF (VisStimIdx = 6) AND (ExpChkSTime6.Value = FALSE) THEN GOTO NextVisStim
-    ENDIF 
-      IF ExpChkNahoda.Value = TRUE THEN
-        IF ExpChkNeopakovat.Value = TRUE THEN 
-          WHILE ExpLastStim = VisStimIdx
-      WAIT 
-            RNDNOOPAK:
-            SysLogWrite("Experiment_Vybirani_nahodneho_stimulu")
-            VisStimIdx = Round(Rnd(1, 6), 0)
-            SysLogWrite("Experiment_Vybran_Stimul: " & VisStimIdx)
-            IF (VisStimIdx = 1) AND (ExpChkSTime.Value = FALSE) THEN GOTO RNDNOOPAK
-            IF (VisStimIdx = 2) AND (ExpChkSTime2.Value = FALSE) THEN GOTO RNDNOOPAK
-            IF (VisStimIdx = 3) AND (ExpChkSTime3.Value = FALSE) THEN GOTO RNDNOOPAK
-            IF (VisStimIdx = 4) AND (ExpChkSTime4.Value = FALSE) THEN GOTO RNDNOOPAK
-            IF (VisStimIdx = 5) AND (ExpChkSTime5.Value = FALSE) THEN GOTO RNDNOOPAK
-            IF (VisStimIdx = 6) AND (ExpChkSTime6.Value = FALSE) THEN GOTO RNDNOOPAK
-          WEND 
-          ExpLastStim = VisStimIdx
-        ELSE 
-         WAIT 
-          RNDOPAK:
-          SysLogWrite("Experiment_Vybirani_nahodneho_stimulu")
-          VisStimIdx = Round(Rnd(1, 6), 0)
-          SysLogWrite("Experiment_Vybran_Stimul: " & VisStimIdx)
-          IF (VisStimIdx = 1) AND (ExpChkSTime.Value = FALSE) THEN GOTO RNDOPAK
-          IF (VisStimIdx = 2) AND (ExpChkSTime2.Value = FALSE) THEN GOTO RNDOPAK
-          IF (VisStimIdx = 3) AND (ExpChkSTime3.Value = FALSE) THEN GOTO RNDOPAK
-          IF (VisStimIdx = 4) AND (ExpChkSTime4.Value = FALSE) THEN GOTO RNDOPAK
-          IF (VisStimIdx = 5) AND (ExpChkSTime5.Value = FALSE) THEN GOTO RNDOPAK
-          IF (VisStimIdx = 6) AND (ExpChkSTime6.Value = FALSE) THEN GOTO RNDOPAK
-        ENDIF 
-      ENDIF 
-      WAIT 
-      'ExperimentPicture.Picture = Picture.Load(Str(VisStimIdx) & ".bmp")
-      SysLogWrite("Experiment_ZOBR_STIMUL: " & VisStimIdx)
-      IF (VisStimIdx < 1) OR (VisStimIdx > 6) THEN GOTO EXPSTART
-      ExperimentPicture.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp")
-      Form1.stimul("/home/tomsuch/" & Str(VisStimIdx) & ".bmp")
-'      Form1.PictureBox1.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp"))
-'      Form1.Picture = Picture.Load("/home/tomsuch/" & Str(VisStimIdx) & ".bmp")
-      Label23.Text = VisStimIdx
-      SysLogWrite("Experiment_PAUZA_1")
-      IF ExpChkEnableTiming.Value = FALSE THEN 
-        ExperimentTxtTime0.BackColor = Color.Green
-        PreCntTmp = 0
-        PreCnt = TRUE
-        WHILE PreCntTmp < ExpTime0
-          WAIT 
-          TxtPreWDTTmr.Text = PreCntTmp
-          WAIT 
-        WEND
-        ExperimentTxtTime0.BackColor = Color.White
-      ELSE 
-        IF VisStimIdx = 1 THEN ExpTemp = Val(ExpTxtS1Time.Text)
-        IF VisStimIdx = 2 THEN ExpTemp = Val(ExpTxtS2Time.Text)
-        IF VisStimIdx = 3 THEN ExpTemp = Val(ExpTxtS3Time.Text)
-        IF VisStimIdx = 4 THEN ExpTemp = Val(ExpTxtS4Time.Text)
-        IF VisStimIdx = 5 THEN ExpTemp = Val(ExpTxtS5Time.Text)
-        IF VisStimIdx = 6 THEN ExpTemp = Val(ExpTxtS6Time.Text)
-        IF VisStimIdx = 1 THEN ExpTxtS1Time.BackColor = Color.Green
-        IF VisStimIdx = 2 THEN ExpTxtS2Time.BackColor = Color.Green
-        IF VisStimIdx = 3 THEN ExpTxtS3Time.BackColor = Color.Green
-        IF VisStimIdx = 4 THEN ExpTxtS4Time.BackColor = Color.Green
-        IF VisStimIdx = 5 THEN ExpTxtS5Time.BackColor = Color.Green
-        IF VisStimIdx = 6 THEN ExpTxtS6Time.BackColor = Color.Green
-        PreCntTmp = 0
-        PreCnt = TRUE
-        WHILE PreCntTmp < ExpTemp
-          WAIT 
-          TxtPreWDTTmr.Text = PreCntTmp
-          WAIT 
-        WEND
-        IF VisStimIdx = 1 THEN ExpTxtS1Time.BackColor = Color.White
-        IF VisStimIdx = 2 THEN ExpTxtS2Time.BackColor = Color.White
-        IF VisStimIdx = 3 THEN ExpTxtS3Time.BackColor = Color.White
-        IF VisStimIdx = 4 THEN ExpTxtS4Time.BackColor = Color.White
-        IF VisStimIdx = 5 THEN ExpTxtS5Time.BackColor = Color.White
-        IF VisStimIdx = 6 THEN ExpTxtS6Time.BackColor = Color.White
-      ENDIF 
-      TxtPreWDTTmr.Text = 0  
-      IF ExperimentCheckZhasniStimul.Value = TRUE THEN
-        SysLogWrite("Experiment_ZHAS_STIMUL")
-        ExperimentPicture.Picture = Picture.Load("/home/tomsuch/clear.bmp")
-'        Form1.PictureBox1.Picture = Picture.Load("/home/tomsuch/clear.bmp")
-        Form1.stimul("/home/tomsuch/clear.bmp")
-        WAIT 
-      ENDIF 
-      WAIT 
-      IF CheckBox1.Value = TRUE THEN 
-        ExperimentTxtTime1.BackColor = Color.Green
-        SysLogWrite("Experiment_PAUZA_2")
-        PreCntTmp = 0
-        PreCnt = TRUE
-        WHILE PreCntTmp < ExpTime1
-          WAIT 
-          TxtPreWDTTmr.Text = PreCntTmp
-          WAIT 
-        WEND
-        TxtPreWDTTmr.Text = 0  
-        ExperimentTxtTime1.BackColor = Color.White
-      ENDIF 
-      LabelPre6.BackColor = Color.Green
-      SysLogWrite("Experiment_DVERE_OTEVIRANI")
-      IF SerialPort1.Status = 1 THEN
-        SysLogWrite("Experiment_SYSTEM_BOX_OK")
-        WRITE #SerialPort1, "D"
-      ELSE 
-        SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-      ENDIF 
-      PreCntTmp = 0
-      PreCnt = TRUE
-      WHILE PreCntTmp < 3
-        WAIT 
-        TxtPreWDTTmr.Text = PreCntTmp
-        WAIT 
-      WEND
-      TxtPreWDTTmr.Text = 0  
-      SysLogWrite("Experiment_DVERE_OTEVRENY")
-      LabelPre6.BackColor = Color.Background
-      ExperimentTxtTimeout.BackColor = Color.Green
-      LabelPre7.BackColor = Color.Green
-      ExpZ = 0
-      ExpTmrTimeout.Enabled = FALSE
-      ExpTimeoutBuff = 0
-      ExpTmrTimeout.Enabled = TRUE
-      SysLogWrite("Experiment_START_TIMEOUT_COUNTER")
-      SysLogWrite("Experiment_POTKAN_CEKANI")
-      WHILE (ExpZ < 1) AND (ExpTimeoutBuff < ExpTimeout)
-        IF PotkanAkceBuff = 1 THEN ExpZ = 1
-        IF PotkanAkceBuff = 2 THEN ExpZ = 2
-        IF PotkanAkceBuff = 4 THEN ExpZ = 3
-        IF PotkanAkceBuff = 8 THEN ExpZ = 4
-        IF PotkanAkceBuff = 16 THEN ExpZ = 5
-        IF PotkanAkceBuff = 32 THEN ExpZ = 6
-        WAIT 
-      WEND 
-      IF ExpTimeoutBuff >= ExpTimeout THEN SysLogWrite("Experiment_POTKAN_TIMEOUT")
-      IF (expz > 0) AND (ExpZ < 7) THEN SysLogWrite("Experiment_POTKAN_AKCE")
-      ExpTmrTimeout.Enabled = FALSE
-      LabelPre7.BackColor = Color.Background
-      ExperimentTxtTimeout.BackColor = Color.White
-      IF VisStimIdx = ExpZ THEN 
-        Label17.BackColor = Color.Green
-        LabelPre8.BackColor = Color.Green
-        SysLogWrite("Experiment_POTKAN_OK_" & VisStimIdx)
-        IF SerialPort1.Status = 1 THEN 
-          SysLogWrite("Experiment_SYSTEM_BOX_OK")
-          IF VisStimIdx = 1 THEN WRITE #SerialPort1, "s1"
-          IF VisStimIdx = 2 THEN WRITE #SerialPort1, "s2"
-          IF VisStimIdx = 3 THEN WRITE #SerialPort1, "s3"
-          IF VisStimIdx = 4 THEN WRITE #SerialPort1, "S1"
-          IF VisStimIdx = 5 THEN WRITE #SerialPort1, "S2"
-          IF VisStimIdx = 6 THEN WRITE #SerialPort1, "S3"
-        ELSE 
-          SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-        ENDIF 
-      PreCntTmp = 0
-      PreCnt = TRUE
-      WHILE PreCntTmp < 2
-        WAIT 
-        TxtPreWDTTmr.Text = PreCntTmp
-        WAIT 
-      WEND
-      TxtPreWDTTmr.Text = 0 
-      Label17.BackColor = Color.Background
-      LabelPre8.BackColor = Color.Background
-      ExperimentTxtTime3.BackColor = Color.Green
-      SysLogWrite("Experiment_PAUZA_3")
-      PreCntTmp = 0
-      PreCnt = TRUE
-      WHILE PreCntTmp < ExpTime3
-        WAIT 
-        TxtPreWDTTmr.Text = PreCntTmp
-        WAIT 
-      WEND
-      TxtPreWDTTmr.Text = 0 
-      ExperimentTxtTime3.BackColor = Color.White
-    ELSE 
-      IF exptimeoutbuff < ExpTimeout THEN SysLogWrite("Experiment_POTKAN_KO_" & ExpZ)
-    ENDIF 
-    Label20.BackColor = Color.Green
-    SysLogWrite("Experiment_RESET_APARATURY")
-    IF SerialPort1.status = 1 THEN 
-      SysLogWrite("Experiment_SYSTEM_BOX_OK")
-      WRITE #SerialPort1, "S0"
-      WRITE #SerialPort1, "s0"
-      WRITE #SerialPort1, "d"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF 
-    PreCntTmp = 0
-    PreCnt = TRUE
-    WHILE PreCntTmp < 3
-      WAIT 
-      TxtPreWDTTmr.Text = PreCntTmp
-      WAIT 
-    WEND
-    TxtPreWDTTmr.Text = 0 
-    Label20.BackColor = Color.Background
-    IF ExperimentChkPausa2.Value = TRUE THEN 
-      ExperimentTxtTime2.BackColor = Color.Green
-      SysLogWrite("Experiment_PAUZA_4")
-      PreCntTmp = 0
-      PreCnt = TRUE
-      WHILE PreCntTmp < 3
-        WAIT 
-        TxtPreWDTTmr.Text = PreCntTmp
-        WAIT 
-      WEND
-      TxtPreWDTTmr.Text = 0 
-      ExperimentTxtTime2.BackColor = Color.White
-    ENDIF 
-
-    IF VisStimIdx > 6 THEN VisStimIdx = 1
-    WAIT 
-    PocetCiklu = PocetCiklu + 1
-  WEND 
-  SysLogWrite("Experiment_KONEC")
-  ExperimentPicture.Picture = Picture.Load("/home/tomsuch/clear.bmp")
-Form1.stimul("/home/tomsuch/clear.bmp")
-ELSE 
-
-  PrePocetCiklu = TxtPrePocetCiklu.Text
-  SysLogWrite("Pre_Pocet_Ciklu: " & PrePocetCiklu)
-  PreCasPiti = TxtPreTmrPiti.Text
-  SysLogWrite("Pre_Cas_Piti: " & PreCasPiti)
-  PreCasPauza = TxtPreTmrPauza.Text
-  SysLogWrite("Pre_Cas_Pauza: " & PreCasPauza)
-BtnPreNastavNastaveniPitek_Click
-PreLastBuffer = 0
-
-  SysLogWrite("Pre_START")
-
-
-
-WHILE ((PocetCiklu < PrePocetCiklu) AND (PreStop = FALSE)) 
-WAIT 
-PocetCiklu = PocetCiklu + 1
-
-
-
-  SysLogWrite("Pre_Ciklus:" & PocetCiklu)
-  SysLogWrite("Pre_Otevreni_Dvirek")
-
-  LabelPre.Background = Color.Green 
-
-    IF SerialPort1.status = 1 THEN 
-      SysLogWrite("Pre_SYSTEM_BOX_OK")
-      WRITE #SerialPort1, "D"
-    ELSE 
-      SysLogWrite("Pre_SYSTEM_BOX_CHYBA")
-    ENDIF 
-
-
-
-  PreCntTmp = 0
-  PreCnt = TRUE
-  
-  WHILE PreCntTmp < 3
-  WAIT 
-  TxtPreWDTTmr.Text = PreCntTmp
-  WAIT 
-  WEND
-    TxtPreWDTTmr.Text = 0  
-
-
-
-  LabelPre.Background = Color.Background
-
-  SysLogWrite("Pre_CEKANI_POTKAN")
-
-  LabelPre2.Background = Color.Green
-
-
-precekejakci:
-WAIT 
-IF PreChkTimeout.Value = TRUE THEN 
-WAIT 
-     ExpZ = 0
-      ExpTmrTimeout.Enabled = FALSE
-      ExpTimeoutBuff = 0
-      ExpTmrTimeout.Enabled = TRUE
-       WHILE (ExpZ < 1) AND (ExpTimeoutBuff < PreTimeout)
-        IF PotkanAkceBuff = 1 THEN ExpZ = 1
-        IF PotkanAkceBuff = 2 THEN ExpZ = 2
-        IF PotkanAkceBuff = 4 THEN ExpZ = 3
-        IF PotkanAkceBuff = 8 THEN ExpZ = 4
-        IF PotkanAkceBuff = 16 THEN ExpZ = 5
-        IF PotkanAkceBuff = 32 THEN ExpZ = 6
-        WAIT 
-      WEND 
-ELSE 
-WAIT
- ExpZ = 0
-       WHILE (ExpZ < 1)
-        IF PotkanAkceBuff = 1 THEN ExpZ = 1
-        IF PotkanAkceBuff = 2 THEN ExpZ = 2
-        IF PotkanAkceBuff = 4 THEN ExpZ = 3
-        IF PotkanAkceBuff = 8 THEN ExpZ = 4
-        IF PotkanAkceBuff = 16 THEN ExpZ = 5
-        IF PotkanAkceBuff = 32 THEN ExpZ = 6
-        WAIT 
-      WEND 
-ENDIF 
-
-SysLogWrite("Pre_Potkan_Akce:" & ExpZ)
-
-IF CheckBoxPrePP2.Value = TRUE THEN 
-WAIT 
-IF PreLastBuffer = ExpZ THEN SysLogWrite("Pre_Potkan_Opakovani_Volby: " & ExpZ)
-WAIT 
-IF PreLastBuffer = ExpZ THEN GOTO precekejakci
-WAIT 
-ENDIF 
-
-PreLastBuffer = ExpZ
-
-
-IF (CheckBoxPrePE.Value = TRUE) AND (ExpZ = 1) THEN
-SysLogWrite("Pre_Potkan_Zakazana_Volba")
-GOTO precekejakci 
-ENDIF 
-
-IF (CheckBoxPrePE2.Value = TRUE) AND (ExpZ = 2) THEN
-SysLogWrite("Pre_Potkan_Zakazana_Volba")
- GOTO precekejakci 
-ENDIF 
-
-IF (CheckBoxPrePE3.Value = TRUE) AND (ExpZ = 3) THEN
-SysLogWrite("Pre_Potkan_Zakazana_Volba")
- GOTO precekejakci
- ENDIF 
-
-IF (CheckBoxPrePE4.Value = TRUE) AND (ExpZ = 4) THEN
-SysLogWrite("Pre_Potkan_Zakazana_Volba")
- GOTO precekejakci 
-ENDIF 
-
-IF (CheckBoxPrePE5.Value = TRUE) AND (ExpZ = 5) THEN
-SysLogWrite("Pre_Potkan_Zakazana_Volba")
- GOTO precekejakci 
-ENDIF 
-
-IF (CheckBoxPrePE6.Value = TRUE) AND (ExpZ = 6) THEN
-SysLogWrite("Pre_Potkan_Zakazana_Volba")
- GOTO precekejakci 
-ENDIF 
-
-
-IF ExpTimeoutBuff >= PreTimeout THEN
-SysLogWrite("Pre_POTKAN_TIMEOUT")
-ExpTmrTimeout.Enabled = FALSE
-ExpTimeoutBuff = 0
-LabelPre2.Background = Color.Background
-GOTO preapres
-ELSE 
-
-
-WAIT 
-ENDIF 
-
-' PreEaventPotkan = FALSE
-  LabelPre2.Background = Color.Background
-
-
-
-'PotkanAkceTMP = AkcePotkan()
-
-
-
-SysLogWrite("Pre_Nastavuji_Pitko:" & ExpZ)
-
-LabelPre3.Background = Color.Green
-
-
-        IF SerialPort1.Status = 1 THEN 
-          SysLogWrite("Pre_SYSTEM_BOX_OK")
-          IF VisStimIdx = 1 THEN WRITE #SerialPort1, "s1"
-          IF VisStimIdx = 2 THEN WRITE #SerialPort1, "s2"
-          IF VisStimIdx = 3 THEN WRITE #SerialPort1, "s3"
-          IF VisStimIdx = 4 THEN WRITE #SerialPort1, "S1"
-          IF VisStimIdx = 5 THEN WRITE #SerialPort1, "S2"
-          IF VisStimIdx = 6 THEN WRITE #SerialPort1, "S3"
-        ELSE 
-          SysLogWrite("Pre_SYSTEM_BOX_CHYBA")
-        ENDIF 
-
-
-
-  PreCntTmp = 0
-  PreCnt = TRUE
-
-
-  WHILE PreCntTmp < 3
-  WAIT 
-  TxtPreWDTTmr.Text = PreCntTmp
-  WAIT 
-  WEND
-    TxtPreWDTTmr.Text = 0  
-  
-LabelPre3.Background = Color.Background
-
-SysLogWrite("Pre_Piti")
-
-TxtPreTmrPiti.Background = Color.Green
-
-  PreCntTmp = 0
-  PreCnt = TRUE
-  WHILE PreCntTmp < PreCasPiti
-  WAIT 
-  TxtPreWDTTmr.Text = PreCntTmp
-  WAIT 
-  WEND
-    TxtPreWDTTmr.Text = 0  
-
-TxtPreTmrPiti.Background = Color.White
-
-preapres:
-
-
-LabelPre5.Background = Color.Green
-LabelPre4.Background = Color.Green
-
-SysLogWrite("Pre_Reset_Aparatury")
-
-    IF SerialPort1.status = 1 THEN 
-      SysLogWrite("Pre_SYSTEM_BOX_OK")
-      WRITE #SerialPort1, "S0"
-      WRITE #SerialPort1, "s0"
-      WRITE #SerialPort1, "d"
-    ELSE 
-      SysLogWrite("Pre_SYSTEM_BOX_CHYBA")
-    ENDIF 
-
-  PreCntTmp = 0
-  PreCnt = TRUE
-  WHILE PreCntTmp < 3
-  WAIT 
-  TxtPreWDTTmr.Text = PreCntTmp
-  WAIT 
-  WEND
-    TxtPreWDTTmr.Text = 0
-      
-LabelPre5.Background = Color.Background
-LabelPre4.Background = Color.Background
-
-
-SysLogWrite("Pre_Pauza")
-
-TxtPreTmrPauza.Background = Color.Green
-
-  PreCntTmp = 0
-  PreCnt = TRUE
-  WHILE PreCntTmp < PreCasPauza
-  WAIT 
-  TxtPreWDTTmr.Text = PreCntTmp
-  WAIT 
-  WEND  
-  TxtPreWDTTmr.Text = 0
-
-TxtPreTmrPauza.Background = Color.White
-
-WEND 
-
-IF PreStop = TRUE THEN PreStop = FALSE
-
-SysLogWrite("Pre_KONEC")
-
-
-ENDIF 
-
-END
-
-FUNCTION AkcePotkan() AS Integer
-  IF PreEaventZ1 = TRUE THEN 
-    RETURN 1
-    PreEaventZ1 = FALSE
-  ENDIF 
-  IF PreEaventZ2 = TRUE THEN 
-    RETURN 2
-    PreEaventZ2 = FALSE
-  ENDIF 
-  IF PreEaventZ3 = TRUE THEN 
-    RETURN 3
-    PreEaventZ3 = FALSE
-  ENDIF 
-  IF PreEaventZ4 = TRUE THEN 
-    RETURN 4
-    PreEaventZ4 = FALSE
-  ENDIF 
-  IF PreEaventZ5 = TRUE THEN 
-    RETURN 5
-    PreEaventZ5 = FALSE
-  ENDIF 
-  IF PreEaventZ6 = TRUE THEN 
-    RETURN 6
-    PreEaventZ6 = FALSE
-  ENDIF 
-END
-
-PUBLIC SUB BtnPreStop_Click()
-  PreStop = TRUE
-  SysLogWrite("Pre_Uzivatlske_Ukonceni")
-END
-
-PUBLIC SUB BtnExperimentNastavTime0_Click()
-  ExpTime0 = Val(ExperimentTxtTime0.Text)
-  SysLogWrite("Exp_Cas_Krok_0: " & ExpTime0)
-END
-
-PUBLIC SUB ExperimentBtnNastavTime1_Click()
-  ExpTime1 = Val(ExperimentTxtTime1.Text)
-  SysLogWrite("Exp_Cas_Krok_1: " & ExpTime1)
-END
-
-PUBLIC SUB BtnSZ12_Click()
-  ExpZ = 1
-END
-
-PUBLIC SUB BtnSZ7_Click()
-  ExpZ = 2
-END
-
-PUBLIC SUB BtnSZ8_Click()
-  ExpZ = 3
-END
-
-PUBLIC SUB BtnSZ11_Click()
-  ExpZ = 4
-END
-
-PUBLIC SUB BtnSZ9_Click()
-  ExpZ = 5
-END
-
-PUBLIC SUB BtnSZ10_Click()
-  ExpZ = 6
-END
-
-PUBLIC SUB ExperimentBtnTime3_Click()
-  ExpTime3 = Val(ExperimentTxtTime3.Text)
-  SysLogWrite("Exp_Cas_Krok_OK: " & ExpTime3)
-END
-
-PUBLIC SUB ExperimentNastavBtnTime2_Click()
-  ExpTime2 = Val(ExperimentTxtTime2.Text)
-  SysLogWrite("Exp_Cas_Krok_POSLEDNI: " & ExpTime2)
-END
-
-PUBLIC SUB ExperimentBtnTimeout_Click()
-  ExpTimeout = Val(ExperimentTxtTimeout.Text)
-  SysLogWrite("Exp_Cas_Timeout: " & ExpTimeout)
-END
-
-PUBLIC SUB ExpTmrTimeout_Timer()
-  WAIT 
-  ExpTimeoutBuff = ExpTimeoutBuff + 1
-END
 
 PUBLIC SUB BtnPripoj_Click()
+  SysLogWrite("PRIPOJOVANI_BOXU_PORT: " & TxtCommPort.Text)
   IF SerialPort1.status = 0 THEN 
     SerialPort1.PortName = TxtCommPort.Text
     SerialPort1.Speed = 9600
@@ -828,8 +157,11 @@ PUBLIC SUB BtnPripoj_Click()
     SerialPort1.FlowControl = FALSE
     SerialPort1.Open
     FINALLY 
-    CATCH 
+    IF ERROR THEN 
+      ErrLogWrite("PRIPOJOVANI_CHYBA_PORTU_" & TxtCommPort.Text & " - " & Error.Text)
+      SysLogWrite("CHYBA_PORTU/BOXU")
       Message("CHYBA BOXU / PORTU")
+    ENDIF 
   ELSE 
     SerialPort1.Close
   ENDIF
@@ -837,145 +169,1045 @@ END
 
 PUBLIC SUB SerialPort1_Read()
 DIM InByte AS Byte
-DIM i AS Integer
-DIM x AS String
-DIM s AS String
   READ #SerialPort1, InByte
   WAIT 
-  PotkanAkceBuff = inByte
+  IF (simulace_zacenichani = FALSE) AND (InputBlock = FALSE) THEN 
+    IF InByte > 0 THEN 
+      IF InByte = 1 THEN stav_sloty = 1
+      IF InByte = 2 THEN stav_sloty = 2
+      IF InByte = 4 THEN stav_sloty = 3
+      IF InByte = 8 THEN stav_sloty = 4
+      IF InByte = 16 THEN stav_sloty = 5
+      IF InByte = 32 THEN stav_sloty = 6
+      IF InByte = 0 THEN stav_sloty = 0
+      InputBlock = TRUE
+    ENDIF 
+  ELSE 
+    InputBuffer_TMP = InByte
+  ENDIF 
   WAIT 
 END
 
-PUBLIC SUB Cekej(InTime AS Integer)
 
-END 
+PUBLIC SUB Pauza(cas AS Integer)
+  IF status_casovac = FALSE THEN 
+    status_casovac = TRUE
+    buffer_casovac = 0
+    TmrCasovac.Enabled = TRUE
+    WHILE cas > buffer_casovac
+      WAIT 
+    WEND 
+    buffer_casovac = 0
+    TmrCasovac.Enabled = FALSE
+    TxtInfoCasovac.text = Str(buffer_casovac)
+    status_casovac = FALSE
+  ENDIF 
+  FINALLY 
+  IF ERROR THEN 
+    ErrLogWrite("NESYNCHRONI_UKONCENI - Pauza()  -  " & Error.Text) 
+  ENDIF  
+END
 
-PUBLIC SUB FMain_KeyPress()
-SELECT Key.Code
-CASE Key.F1
-Message("TEST")
-END SELECT
+PUBLIC SUB AparaturaNastavPitko(n AS Integer)
+  SysLogWrite("APARATURA_NASTAVENI_PITKA: " & Str(n))
+  IF SerialPort1.status = 1 THEN 
+    IF n = 1 THEN WRITE #SerialPort1, "s1"
+    IF n = 1 THEN WRITE #SerialPort1, "S0"
+    IF n = 2 THEN WRITE #SerialPort1, "s2"
+    IF n = 2 THEN WRITE #SerialPort1, "S0"
+    IF n = 3 THEN WRITE #SerialPort1, "s3"
+    IF n = 3 THEN WRITE #SerialPort1, "S0"
+    IF n = 4 THEN WRITE #SerialPort1, "S1"
+    IF n = 4 THEN WRITE #SerialPort1, "s0"
+    IF n = 5 THEN WRITE #SerialPort1, "S2"
+    IF n = 5 THEN WRITE #SerialPort1, "s0"
+    IF n = 6 THEN WRITE #SerialPort1, "S3"
+    IF n = 6 THEN WRITE #SerialPort1, "s0"
+    IF n = 0 THEN WRITE #SerialPort1, "s0"
+    IF n = 0 THEN WRITE #SerialPort1, "S0"
+    SysLogWrite("APARATURA_NASTAVENI_PITKA_OK")
+  ELSE 
+    SysLogWrite("APARATURA_NASTAVENI_PITKA_CHYBA")
+  ENDIF   
+END
+
+PUBLIC SUB AparaturaReset()
+  SysLogWrite("APARATURA_RESET")
+  IF SerialPort1.status = 1 THEN 
+    WRITE #SerialPort1, "S0"
+    WRITE #SerialPort1, "s0"
+    WRITE #SerialPort1, "d"
+    SysLogWrite("APARATURA_RESET_OK")
+  ELSE 
+    SysLogWrite("APARATURA_RESET_CHYBA")
+  ENDIF 
+END
+
+PUBLIC SUB AparaturaOtevriDvere()
+  SysLogWrite("APARATURA_OTEVRENI_DVERI")
+  IF SerialPort1.status = 1 THEN 
+    WRITE #SerialPort1, "D"
+    SysLogWrite("APARATURA_OTEVRENI_DVERI_OK")
+  ELSE 
+    SysLogWrite("APARATURA_OTEVRENI_DVERI_CHYBA")
+  ENDIF 
+END
+
+PUBLIC SUB AparaturaZavriDvere()
+  SysLogWrite("APARATURA_ZAVRENI_DVERI")
+  IF SerialPort1.status = 1 THEN 
+    WRITE #SerialPort1, "d"
+    SysLogWrite("APARATURA_ZAVRENI_DVERI_OK")
+  ELSE 
+    SysLogWrite("APARATURA_ZAVRENI_DVERI_CHYBA")
+  ENDIF 
+END
+
+
+PUBLIC SUB VypisStavSlotu()
+  IF stav_sloty = 0 THEN 
+    CheckBox2.BackColor = Color.Red
+    CheckBox3.BackColor = Color.Red
+    CheckBox4.BackColor = Color.Red
+    CheckBox5.BackColor = Color.Red
+    CheckBox6.BackColor = Color.Red
+    CheckBox7.BackColor = Color.Red
+  ENDIF 
+  WAIT 
+  IF stav_sloty = 1 THEN CheckBox2.BackColor = Color.Green
+  IF stav_sloty = 2 THEN CheckBox3.BackColor = Color.Green
+  IF stav_sloty = 3 THEN CheckBox4.BackColor = Color.Green
+  IF stav_sloty = 4 THEN CheckBox5.BackColor = Color.Green
+  IF stav_sloty = 5 THEN CheckBox6.BackColor = Color.Green
+  IF stav_sloty = 6 THEN CheckBox7.BackColor = Color.Green
+  WAIT 
+END
+
+
+
+
+
+PUBLIC SUB BtnSZ1_MouseDown()
+  SysLogWrite("SIMULACE_ZACENICHANI_1")
+  simulace_zacenichani = TRUE
+  stav_sloty = 1
+END
+PUBLIC SUB BtnSZ1_MouseUp()
+  simulace_zacenichani = FALSE
+  stav_sloty = 0
+END
+
+PUBLIC SUB BtnSZ2_MouseDown()
+  SysLogWrite("SIMULACE_ZACENICHANI_2")
+  simulace_zacenichani = TRUE
+  stav_sloty = 2
+END
+PUBLIC SUB BtnSZ2_MouseUp()
+  simulace_zacenichani = FALSE
+  stav_sloty = 0
+END
+
+PUBLIC SUB BtnSZ3_MouseDown()
+  SysLogWrite("SIMULACE_ZACENICHANI_3")
+  simulace_zacenichani = TRUE
+  stav_sloty = 3
+END
+PUBLIC SUB BtnSZ3_MouseUp()
+  simulace_zacenichani = FALSE
+  stav_sloty = 0
+END
+
+PUBLIC SUB BtnSZ4_MouseDown()
+  SysLogWrite("SIMULACE_ZACENICHANI_4")
+  simulace_zacenichani = TRUE
+  stav_sloty = 4
+END
+PUBLIC SUB BtnSZ4_MouseUp()
+  simulace_zacenichani = FALSE
+  stav_sloty = 0
+END
+
+PUBLIC SUB BtnSZ5_MouseDown()
+  SysLogWrite("SIMULACE_ZACENICHANI_5")
+  simulace_zacenichani = TRUE
+  stav_sloty = 5
+END
+PUBLIC SUB BtnSZ5_MouseUp()
+  simulace_zacenichani = FALSE
+  stav_sloty = 0
+END
+
+PUBLIC SUB BtnSZ6_MouseDown()
+  SysLogWrite("SIMULACE_ZACENICHANI_6")
+  simulace_zacenichani = TRUE
+  stav_sloty = 6
+END
+PUBLIC SUB BtnSZ6_MouseUp()
+  simulace_zacenichani = FALSE
+  stav_sloty = 0
+END
+
+PUBLIC SUB BtnMod_Click()
+ mod_idx = mod_idx + 1
+ IF mod_idx > 1 THEN mod_idx = 0
+ IF mod_idx = 1 THEN BtnMod.Text = "Experiment"
+ IF mod_idx = 0 THEN BtnMod.Text = "PreLearning" 
+ IF mod_idx = 1 THEN SysLogWrite("PREPNUTI_MODU: Experiment")
+ IF mod_idx = 0 THEN SysLogWrite("PREPNUTI_MODU: PreLearning") 
 END
 
 PUBLIC SUB BtnReset_Click()
 
-  IF SerialPort1.status = 1 THEN 
-      SysLogWrite("BOX_RESET")
-      WRITE #SerialPort1, "S0"
-      WRITE #SerialPort1, "s0"
-      WRITE #SerialPort1, "d"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF 
+  AparaturaReset()
 
 END
 
 PUBLIC SUB BtnOpenDor_Click()
 
-  IF SerialPort1.Status = 1 THEN
-        SysLogWrite("BOX_OPEN")
-        WRITE #SerialPort1, "D"
-      ELSE 
-        SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-      ENDIF 
+  AparaturaOtevriDvere()
 
 END
 
 PUBLIC SUB BtnCloseDor_Click()
 
-  IF SerialPort1.status = 1 THEN 
-      SysLogWrite("BOX_CLOSE")
-      WRITE #SerialPort1, "d"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF 
-
-END
-
-PUBLIC SUB BtnPitS6_Click()
-
-   IF SerialPort1.status = 1 THEN 
-      SysLogWrite("BOX_SLOT6")
-      WRITE #SerialPort1, "S3"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF
+  AparaturaZavriDvere()
 
 END
 
 PUBLIC SUB BtnPitS_Click()
 
-   IF SerialPort1.status = 1 THEN 
-      SysLogWrite("BOX_SLOT1")
-      WRITE #SerialPort1, "s1"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF 
-
+  AparaturaNastavPitko(1)
 
 END
 
 PUBLIC SUB BtnPitS2_Click()
 
-   IF SerialPort1.status = 1 THEN 
-      SysLogWrite("BOX_SLOT2")
-      WRITE #SerialPort1, "s2"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF
+  AparaturaNastavPitko(2)
 
 END
 
 PUBLIC SUB BtnPitS3_Click()
 
-   IF SerialPort1.status = 1 THEN 
-      SysLogWrite("BOX_SLOT3")
-      WRITE #SerialPort1, "s3"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF
+  AparaturaNastavPitko(3)
 
 END
 
 PUBLIC SUB BtnPitS4_Click()
 
-   IF SerialPort1.status = 1 THEN 
-      SysLogWrite("BOX_SLOT4")
-      WRITE #SerialPort1, "S1"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF
+  AparaturaNastavPitko(4)
 
 END
 
 PUBLIC SUB BtnPitS5_Click()
 
-   IF SerialPort1.status = 1 THEN 
-      SysLogWrite("BOX_SLOT5")
-      WRITE #SerialPort1, "S2"
-    ELSE 
-      SysLogWrite("Experiment_SYSTEM_BOX_CHYBA")
-    ENDIF
+  AparaturaNastavPitko(5)
 
 END
 
-PUBLIC SUB PreBtnNastavTimeout_Click()
-SysLogWrite("Pre_Nastavuji_Timeout: " & Val(TxtPreTimeout.Text))
-  PreTimeout = Val(TxtPreTimeout.Text)
+PUBLIC SUB BtnPitS6_Click()
 
+  AparaturaNastavPitko(6)
+
+END
+
+PUBLIC SUB ChkTimeout_Click()
+  konfigurace_timeout_status = ChkTimeout.Value
+  IF konfigurace_timeout_status = TRUE THEN SysLogWrite("KONFIGURACE_TIMEOUT: ZAPNUTO")
+  IF konfigurace_timeout_status = FALSE THEN SysLogWrite("KONFIGURACE_TIMEOUT: VYPNUTO")
+END
+
+PUBLIC SUB ChkPreNeopakovat_Click()
+  konfigurace_prelearning_neopakovat = ChkPreNeopakovat.Value
+  IF konfigurace_prelearning_neopakovat = TRUE THEN SysLogWrite("KONFIGURACE_PreLearning_NEOPAKOVAT: ZAPNUTO")
+  IF konfigurace_prelearning_neopakovat = FALSE THEN SysLogWrite("KONFIGURACE_Prelearning_NEOPAKOVAT: VYPNUTO")
+END
+
+PUBLIC SUB ChkPrePauza_Click()
+  konfigurace_prelearning_pauza = ChkPrePauza.Value
+  IF konfigurace_prelearning_pauza = TRUE THEN SysLogWrite("KONFIGURACE_PreLearning_PAUZA: ZAPNUTO")
+  IF konfigurace_prelearning_pauza = FALSE THEN SysLogWrite("KONFIGURACE_Prelearning_PAUZA: VYPNUTO")
+END
+
+PUBLIC SUB BtnNastav_Click()
+  SysLogWrite("UPLATNUJI_PARAMETRY")
+  UplatniParametry()
+  VypisParametry()
+  SysLogWrite("PARAMETRY_UPLATNENY")
+  SysLogWrite("UKLADAM_ZAKLADNI_KONFIGURACI")
+  UlozDefoult()
+  SysLogWrite("ZAKLADNI_KONFIGURACE_ULOZENA")
+END
+
+PUBLIC SUB VypisParametry()
+  IF mod_idx = 0 THEN SysLogWrite("MOD_PRELEARNING")
+  IF mod_idx = 1 THEN SysLogWrite("MOD_EXPERIMENT")
+  IF konfigurace_timeout_status = TRUE THEN SysLogWrite("KONFIGURACE_TIMEOUT: ZAPNUTO")
+  IF konfigurace_timeout_status = FALSE THEN SysLogWrite("KONFIGURACE_TIMEOUT: VYPNUTO")
+  IF konfigurace_prelearning_neopakovat = TRUE THEN SysLogWrite("KONFIGURACE_PRELEARNING_NEOPAKOVAT: ZAPNUTO")
+  IF konfigurace_prelearning_neopakovat = FALSE THEN SysLogWrite("KONFIGURACE_PRELEARNING_NEOPAKOVAT: VYPNUTO")
+  IF konfigurace_prelearning_pauza = TRUE THEN SysLogWrite("KONFIGURACE_PRELEARNING_PAUZA: ZAPNUTO")
+  IF konfigurace_prelearning_pauza = FALSE THEN SysLogWrite("KONFIGURACE_PRELEARNING_PAUZA: VYPNUTO")
+  SysLogWrite("KONFIGURACE_PRELEARNING_PAUZA: " & konfigurace_prelearning_cas_dalsi_ciklus)  
+  SysLogWrite("KONFIGURACE_PRELEARNING_CAS_PITI: " & konfigurace_prelearning_cas_piti)
+  SysLogWrite("KONFIGURACE_POCET_CYKLU: " & konfigurace_pocet_cyklu)
+  SysLogWrite("KONFIGURACE_CAS_NA_REAKCI: " & konfigurace_timeout)  
+  IF konfigurace_experiment_casovani = TRUE THEN SysLogWrite("KONFIGURACE_CASOVANI: ZAPNUTO")
+  IF konfigurace_experiment_casovani = FALSE THEN SysLogWrite("KONFIGURACE_CASOVANI: VYPNUTO")
+  IF konfigurace_experiment_nahoda = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_NAHODA: ZAPNUTO")
+  IF konfigurace_experiment_nahoda = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_NAHODA: VYPNUTO")
+  IF konfigurace_experiment_neopakovat = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_NEOPAKOVAT: ZAPNUTO")
+  IF konfigurace_experiment_neopakovat = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_NEOPAKOVAT: VYPNUTO")
+  IF konfigurace_experiment_vypni_stimul = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_ZHASNUTI_STIMULU: ZAPNUTO")
+  IF konfigurace_experiment_vypni_stimul = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_ZHASNUTI_STIMULU: VYPNUTO")
+  IF konfigurace_experiment_vypni_stimul_pauza_enable = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_PAUZA_ZHASLY_STIMUL: ZAPNUTO")
+  IF konfigurace_experiment_vypni_stimul_pauza_enable = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_PAUZA_ZHASLY_STIMUL: VYPNUTO")
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_cas_zobrazeni_stimulu)  
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_PITI " & konfigurace_experiment_cas_piti)  
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_ZHASLY_STIMUL: " & konfigurace_experiment_cas_zhasnuteho_stimulu)  
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_CIKLUS: " & konfigurace_experiment_cas_dalsi_ciklus)  
+  IF konfigurace_experiment_slot_enable_1 = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_1: ZAPNUTO")
+  IF konfigurace_experiment_slot_enable_1 = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_1: VYPNUTO")
+  IF konfigurace_experiment_slot_enable_2 = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_2: ZAPNUTO")
+  IF konfigurace_experiment_slot_enable_2 = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_2: VYPNUTO")
+  IF konfigurace_experiment_slot_enable_3 = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_3: ZAPNUTO")
+  IF konfigurace_experiment_slot_enable_3 = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_3: VYPNUTO")
+  IF konfigurace_experiment_slot_enable_4 = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_4: ZAPNUTO")
+  IF konfigurace_experiment_slot_enable_4 = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_4: VYPNUTO")
+  IF konfigurace_experiment_slot_enable_5 = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_5: ZAPNUTO")
+  IF konfigurace_experiment_slot_enable_5 = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_5: VYPNUTO")
+  IF konfigurace_experiment_slot_enable_6 = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_6: ZAPNUTO")
+  IF konfigurace_experiment_slot_enable_6 = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_6: VYPNUTO")
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_1: " & Str(konfigurace_experiment_casovani_s1))
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_2: " & Str(konfigurace_experiment_casovani_s2))
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_3: " & Str(konfigurace_experiment_casovani_s3))
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_4: " & Str(konfigurace_experiment_casovani_s4))
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_5: " & Str(konfigurace_experiment_casovani_s5))
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_6: " & Str(konfigurace_experiment_casovani_s6))
+END
+
+PUBLIC SUB UplatniParametry()
+  konfigurace_pocet_cyklu = Val(TxtPocetCiklu.Text)
+  konfigurace_timeout = Val(TxtTimeout.Text)
+  konfigurace_timeout_status = ChkTimeout.Value
+  konfigurace_prelearning_cas_piti = Val(TxtPreCasPiti.Text)
+  konfigurace_prelearning_cas_dalsi_ciklus = Val(TxtPrePauza.Text)
+  konfigurace_prelearning_pauza = ChkPrePauza.Value
+  konfigurace_prelearning_neopakovat = ChkPreNeopakovat.Value
+  konfigurace_experiment_nahoda = ChkExpNahoda.Value
+  konfigurace_experiment_neopakovat = ChkExpNeopakovat.Value
+  konfigurace_experiment_cas_zobrazeni_stimulu = Val(ExperimentTxtTime0.Text)
+  konfigurace_experiment_cas_piti = Val(ExperimentTxtTime3.Text)
+  konfigurace_experiment_cas_zhasnuteho_stimulu = Val(ExperimentTxtTime1.Text)
+  konfigurace_experiment_cas_dalsi_ciklus = Val(ExperimentTxtTime2.Text)
+  konfigurace_experiment_vypni_stimul = ChkZhasniStimul.Value
+  konfigurace_experiment_vypni_stimul_pauza_enable = ChkVypStimulPauza.Value
+  konfigurace_experiment_casovani = ExpChkEnableTiming.Value
+  konfigurace_experiment_slot_enable_1 = ExpChkSTime.Value
+  konfigurace_experiment_slot_enable_2 = ExpChkSTime2.Value
+  konfigurace_experiment_slot_enable_3 = ExpChkSTime3.Value
+  konfigurace_experiment_slot_enable_4 = ExpChkSTime4.Value
+  konfigurace_experiment_slot_enable_5 = ExpChkSTime5.Value
+  konfigurace_experiment_slot_enable_6 = ExpChkSTime6.Value
+  konfigurace_experiment_casovani_s1 = Val(ExpTxtS1Time.Text)
+  konfigurace_experiment_casovani_s2 = Val(ExpTxtS2Time.Text)
+  konfigurace_experiment_casovani_s3 = Val(ExpTxtS3Time.Text)
+  konfigurace_experiment_casovani_s4 = Val(ExpTxtS4Time.Text)
+  konfigurace_experiment_casovani_s5 = Val(ExpTxtS5Time.Text)
+  konfigurace_experiment_casovani_s6 = Val(ExpTxtS6Time.Text)
+END
+
+SUB UlozDefoult()
+  DIM DefKonfFile AS File
+  DefKonfFile = OPEN "/ratbox/system/defconf.rbconf" FOR WRITE 
+  WAIT 
+  PRINT #DefKonfFile, Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss")
+  PRINT #DefKonfFile, TxtCommPort.Text
+  PRINT #DefKonfFile, Str(konfigurace_pocet_cyklu)
+  PRINT #DefKonfFile, Str(konfigurace_timeout)
+  PRINT #DefKonfFile, konfigurace_timeout_status
+  PRINT #DefKonfFile, Str(konfigurace_prelearning_cas_piti)
+  PRINT #DefKonfFile, Str(konfigurace_prelearning_cas_dalsi_ciklus)
+  PRINT #DefKonfFile, konfigurace_prelearning_pauza
+  PRINT #DefKonfFile, konfigurace_prelearning_neopakovat
+  PRINT #DefKonfFile, konfigurace_experiment_nahoda
+  PRINT #DefKonfFile, konfigurace_experiment_neopakovat
+  PRINT #DefKonfFile, Str(konfigurace_experiment_cas_zobrazeni_stimulu)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_cas_piti)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_cas_zhasnuteho_stimulu)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_cas_dalsi_ciklus)
+  PRINT #DefKonfFile, konfigurace_experiment_vypni_stimul
+  PRINT #DefKonfFile, konfigurace_experiment_vypni_stimul_pauza_enable
+  PRINT #DefKonfFile, konfigurace_experiment_casovani
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_1
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_2
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_3
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_4
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_5
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_6
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s1)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s2)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s3)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s4)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s5)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s6)  
+  PRINT #DefKonfFile, Str(mod_idx)
+  WAIT 
+  DefKonfFile.Close
+END
+
+SUB UlozUserCfg(CfgName AS String)
+  DIM DefKonfFile AS File
+  
+  IF Exist("/ratbox/konfigurace/" & CfgName & ".rbconf") = FALSE THEN 
+    Message("Profil: " & CfgName & " neexistuje a bude vytvoren......")
+    SHELL ("touch /ratbox/konfigurace/" & CfgName & ".rbconf")
+    Message("Profil: " & CfgName & " Vytvoren....")
+    CfgList()
+  ELSE 
+    IF Message.Warning("Profil: " & CfgName & " jiz existuje, chcete ho prepsat ?", "NE", "ANO") = 2 THEN 
+      GOTO cfgwrite
+    ELSE 
+      GOTO cfgwritekonec
+    ENDIF  
+  ENDIF 
+
+
+  cfgwrite:
+
+  DefKonfFile = OPEN "/ratbox/konfigurace/" & CfgName & ".rbconf" FOR WRITE 
+
+  FINALLY 
+  IF ERROR THEN 
+    Message(Error.Text)
+    Message(Error.Text)
+  ENDIF 
+  
+  WAIT 
+  PRINT #DefKonfFile, Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss")
+  PRINT #DefKonfFile, TxtCommPort.Text
+  PRINT #DefKonfFile, Str(konfigurace_pocet_cyklu)
+  PRINT #DefKonfFile, Str(konfigurace_timeout)
+  PRINT #DefKonfFile, konfigurace_timeout_status
+  PRINT #DefKonfFile, Str(konfigurace_prelearning_cas_piti)
+  PRINT #DefKonfFile, Str(konfigurace_prelearning_cas_dalsi_ciklus)
+  PRINT #DefKonfFile, konfigurace_prelearning_pauza
+  PRINT #DefKonfFile, konfigurace_prelearning_neopakovat
+  PRINT #DefKonfFile, konfigurace_experiment_nahoda
+  PRINT #DefKonfFile, konfigurace_experiment_neopakovat
+  PRINT #DefKonfFile, Str(konfigurace_experiment_cas_zobrazeni_stimulu)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_cas_piti)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_cas_zhasnuteho_stimulu)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_cas_dalsi_ciklus)
+  PRINT #DefKonfFile, konfigurace_experiment_vypni_stimul
+  PRINT #DefKonfFile, konfigurace_experiment_vypni_stimul_pauza_enable
+  PRINT #DefKonfFile, konfigurace_experiment_casovani
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_1
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_2
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_3
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_4
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_5
+  PRINT #DefKonfFile, konfigurace_experiment_slot_enable_6
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s1)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s2)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s3)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s4)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s5)
+  PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s6)  
+  PRINT #DefKonfFile, Str(mod_idx)
+  WAIT 
+  DefKonfFile.Close
+  
+  cfgwritekonec:
+  
+END
+
+
+
+SUB DefKonfLoad()
+DIM linc AS Integer
+DIM lin AS String
+DIM arr_strings AS String[]
+  SysLogWrite("OBNOVENI_PARAMETRU")
+  arr_strings = Split(File.LOAD("/ratbox/system/defconf.rbconf"), "\n")
+  FOR EACH lin IN arr_strings
+    lin = arr_strings[linc]
+    IF linc = 1 THEN TxtCommPort.text = lin
+    IF linc = 2 THEN TxtPocetCiklu.Text = lin
+    IF linc = 3 THEN TxtTimeout.Text = lin
+    IF (linc = 4) AND (lin = "True") THEN ChkTimeout.Value = TRUE
+    IF (linc = 4) AND (lin = "False") THEN ChkTimeout.Value = FALSE
+    IF linc = 5 THEN TxtPreCasPiti.Text = lin
+    IF linc = 6 THEN TxtPrePauza.Text = lin
+    IF (linc = 7) AND (lin = "True") THEN ChkPrePauza.Value = TRUE
+    IF (linc = 7) AND (lin = "False") THEN ChkPrePauza.Value = FALSE
+    IF (linc = 8) AND (lin = "True") THEN ChkPreNeopakovat.Value = TRUE
+    IF (linc = 8) AND (lin = "False") THEN ChkPreNeopakovat.Value = FALSE
+    IF (linc = 9) AND (lin = "True") THEN ChkExpNahoda.Value = TRUE
+    IF (linc = 9) AND (lin = "False") THEN ChkExpNahoda.Value = FALSE
+    IF (linc = 10) AND (lin = "True") THEN ChkExpNeopakovat.Value = TRUE
+    IF (linc = 10) AND (lin = "False") THEN ChkExpNeopakovat.Value = FALSE
+    IF linc = 11 THEN ExperimentTxtTime0.Text = lin
+    IF linc = 12 THEN ExperimentTxtTime3.Text = lin
+    IF linc = 13 THEN ExperimentTxtTime1.Text = lin
+    IF linc = 14 THEN ExperimentTxtTime2.Text = lin
+    IF (linc = 15) AND (lin = "True") THEN ChkZhasniStimul.Value = TRUE
+    IF (linc = 15) AND (lin = "False") THEN ChkZhasniStimul.Value = FALSE
+    IF (linc = 16) AND (lin = "True") THEN ChkVypStimulPauza.Value = TRUE
+    IF (linc = 16) AND (lin = "False") THEN ChkVypStimulPauza.Value = FALSE
+    IF (linc = 17) AND (lin = "True") THEN ExpChkEnableTiming.Value = TRUE
+    IF (linc = 17) AND (lin = "False") THEN ExpChkEnableTiming.Value = FALSE
+    IF (linc = 18) AND (lin = "True") THEN ExpChkSTime.Value = TRUE
+    IF (linc = 18) AND (lin = "False") THEN ExpChkSTime.Value = FALSE
+    IF (linc = 19) AND (lin = "True") THEN ExpChkSTime2.Value = TRUE
+    IF (linc = 19) AND (lin = "False") THEN ExpChkSTime2.Value = FALSE
+    IF (linc = 20) AND (lin = "True") THEN ExpChkSTime3.Value = TRUE
+    IF (linc = 20) AND (lin = "False") THEN ExpChkSTime3.Value = FALSE
+    IF (linc = 21) AND (lin = "True") THEN ExpChkSTime4.Value = TRUE
+    IF (linc = 21) AND (lin = "False") THEN ExpChkSTime4.Value = FALSE
+    IF (linc = 22) AND (lin = "True") THEN ExpChkSTime5.Value = TRUE
+    IF (linc = 22) AND (lin = "False") THEN ExpChkSTime5.Value = FALSE
+    IF (linc = 23) AND (lin = "True") THEN ExpChkSTime6.Value = TRUE
+    IF (linc = 23) AND (lin = "False") THEN ExpChkSTime6.Value = FALSE
+    IF linc = 24 THEN ExpTxtS1Time.Text = lin
+    IF linc = 25 THEN ExpTxtS2Time.Text = lin
+    IF linc = 26 THEN ExpTxtS3Time.Text = lin
+    IF linc = 27 THEN ExpTxtS4Time.Text = lin
+    IF linc = 28 THEN ExpTxtS5Time.Text = lin
+    IF linc = 29 THEN ExpTxtS6Time.Text = lin
+    IF linc = 30 THEN mod_idx = Val(lin)
+    IF (linc = 30) AND (lin = "0") THEN BtnMod.Text = "PreLearning"  
+    IF (linc = 30) AND (lin = "1") THEN BtnMod.Text = "Experiment"  
+    linc = linc + 1
+  NEXT 
+  SysLogWrite("PARAMETRY_OBNOVENY")
+END
+
+PUBLIC SUB TmrCasovac_Timer()
+  buffer_casovac = buffer_casovac + 1
+  TxtInfoCasovac.text = Str(buffer_casovac)
+  PosliInfo()
+  WAIT
+END
+
+PUBLIC SUB BtnPreStart_Click()
+  SysLogWrite("UPLATNUJI_PARAMETRY")
+  UplatniParametry()
+  VypisParametry()
+  SysLogWrite("PARAMETRY_UPLATNENY")
+  STOP_State = FALSE
+  tmp_cyklus = 0
+
+  IF mod_idx = 0 THEN 
+    SysLogWrite("PRELEARNING_START")
+    WHILE (tmp_cyklus < konfigurace_pocet_cyklu) AND (STOP_State = FALSE)
+          
+     ' PRELEARNING - KROK 1 - OTEVRENI DVERI START
+      LabelPre.BackColor = Color.Green
+      AparaturaOtevriDvere()
+      Pauza(3)
+      LabelPre.BackColor = Color.Background
+      ' PRELEARNING - KROK 1 - OTEVRENI DVERI STOP
+
+      WAIT 
+  
+      ' PRELEARNING - KROK 2 - CEKANI, ANALYZA POTKANI AKCE START
+      cekani_potkan_akce:
+
+      TimeoutCountingStart()      
+      LabelPre2.BackColor = Color.Green
+      stav_sloty = 0
+      InputBlock = FALSE
+      WHILE (stav_sloty = 0) AND (konfigurace_timeout > buffer_timeout)
+        WAIT 
+      WEND 
+      TimeoutCountingStop()
+      LabelPre2.BackColor = Color.Background
+      buffer_sloty_aktual_state = stav_sloty
+      stav_sloty = 0
+      
+      SysLogWrite("PRELEARNING_POTKAN_AKTIVITA_" & Str(buffer_sloty_aktual_state))
+
+      IF buffer_sloty_aktual_state = 0 THEN 
+        SysLogWrite("PRELEARNING_TIMEOUT")
+        GOTO prelearning_reset
+      ENDIF 
+
+      IF (buffer_sloty_last_state = buffer_sloty_aktual_state) AND (konfigurace_prelearning_neopakovat = TRUE) THEN 
+        SysLogWrite("PRELEARNING_POTKAN_OPAKOVANI")
+        LabelPre2.BackColor = Color.Red
+        Pauza(1)
+        LabelPre2.BackColor = Color.Background
+        buffer_sloty_aktual_state = 0
+        GOTO cekani_potkan_akce
+      ENDIF 
+
+      IF (buffer_sloty_aktual_state = 1) AND (konfigurace_experiment_slot_enable_1 = FALSE) THEN 
+        SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        GOTO cekani_potkan_akce
+      ENDIF 
+      IF (buffer_sloty_aktual_state = 2) AND (konfigurace_experiment_slot_enable_2 = FALSE) THEN 
+        SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        GOTO cekani_potkan_akce
+      ENDIF 
+      IF (buffer_sloty_aktual_state = 3) AND (konfigurace_experiment_slot_enable_3 = FALSE) THEN 
+        SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        GOTO cekani_potkan_akce
+      ENDIF 
+      IF (buffer_sloty_aktual_state = 4) AND (konfigurace_experiment_slot_enable_4 = FALSE) THEN 
+        SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        GOTO cekani_potkan_akce
+      ENDIF 
+      IF (buffer_sloty_aktual_state = 5) AND (konfigurace_experiment_slot_enable_5 = FALSE) THEN 
+        SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        GOTO cekani_potkan_akce
+      ENDIF 
+      IF (buffer_sloty_aktual_state = 6) AND (konfigurace_experiment_slot_enable_6 = FALSE) THEN 
+        SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        GOTO cekani_potkan_akce
+      ENDIF 
+      
+      buffer_sloty_last_state = buffer_sloty_aktual_state
+      LabelPre2.BackColor = Color.Background
+      ' PRELEARNING - KROK 2 - CEKANI, ANALYZA POTKANI AKCE STOP
+
+      LabelPre3.BackColor = Color.Green
+      AparaturaNastavPitko(buffer_sloty_aktual_state)
+      Pauza(3)
+      LabelPre3.BackColor = Color.Background
+      
+      Label1.BackColor = Color.Green
+      Pauza(konfigurace_prelearning_cas_piti)
+      Label1.BackColor = Color.Background
+
+      prelearning_reset:      
+      LabelPre5.BackColor = Color.Green
+      AparaturaReset()
+      Pauza(3)
+      LabelPre5.BackColor = Color.Background
+      
+      IF konfigurace_prelearning_pauza = TRUE THEN
+        ChkPrePauza.BackColor = Color.Green
+        Pauza(konfigurace_prelearning_cas_dalsi_ciklus)
+        ChkPrePauza.BackColor = Color.Background
+      ENDIF 
+
+    tmp_cyklus = tmp_cyklus + 1
+    WEND
+    
+    tmp_cyklus = 0
+    stav_sloty = 0
+    
+    
+    SysLogWrite("PRELEARNING_KONEC")
+     
+  ELSE IF mod_idx = 1 THEN 
+    tmp_cyklus = 0
+    stav_sloty = 0
+    tmp_stimul_idx = 0
+    STOP_State = FALSE
+    tmp_mils = 0
+
+    ExpLogInit()
+    Pauza(5)
+    ExpLogWrite("EXPERIMENT_START")
+    SysLogWrite("EXPERIMENT_START")    
+
+    WHILE (tmp_cyklus < konfigurace_pocet_cyklu) AND (STOP_State = FALSE)
+      TimerExperimentMils.Enabled = TRUE
+      exp_genstim:
+      ExpLogWrite("EXPERIMENT_ZACATEK_CYKLU: " & tmp_cyklus)  
+      IF konfigurace_experiment_nahoda = TRUE THEN 
+        tmp_stimul_idx = Rnd(1, 7)    
+        ExpLogWrite("EXPERIMENT_NAHODNY_STIMUL: " & tmp_stimul_idx)
+      ELSE 
+        IF tmp_stimul_idx = 6 THEN tmp_stimul_idx = 0
+        tmp_stimul_idx = tmp_stimul_idx + 1
+        ExpLogWrite("EXPERIMENT_LINEARNI_VYBER_STIMULU: " & tmp_stimul_idx)
+      ENDIF 
+      IF (tmp_stimul_last = tmp_stimul_idx) AND (konfigurace_experiment_neopakovat = TRUE) THEN 
+        ExpLogWrite("EXPERIMENT_OPAKOVANI_STIMULU: " & tmp_stimul_idx & " GENERUJI_NOVY")
+        GOTO exp_genstim
+      ENDIF 
+      tmp_stimul_last = tmp_stimul_idx
+      IF (konfigurace_experiment_slot_enable_1 = FALSE) AND (tmp_stimul_idx = 1) THEN
+        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+        GOTO exp_genstim
+      ENDIF 
+      IF (konfigurace_experiment_slot_enable_2 = FALSE) AND (tmp_stimul_idx = 2) THEN 
+        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+        GOTO exp_genstim
+      ENDIF 
+      IF (konfigurace_experiment_slot_enable_3 = FALSE) AND (tmp_stimul_idx = 3) THEN 
+        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+        GOTO exp_genstim
+      ENDIF 
+      IF (konfigurace_experiment_slot_enable_4 = FALSE) AND (tmp_stimul_idx = 4) THEN 
+        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+        GOTO exp_genstim
+      ENDIF 
+      IF (konfigurace_experiment_slot_enable_5 = FALSE) AND (tmp_stimul_idx = 5) THEN 
+        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+        GOTO exp_genstim
+      ENDIF 
+      IF (konfigurace_experiment_slot_enable_6 = FALSE) AND (tmp_stimul_idx = 6) THEN 
+        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+        GOTO exp_genstim
+      ENDIF 
+
+      Label23.Text = tmp_stimul_idx
+      
+      ExpLogWrite("EXPERIMENT_ZOBRAZENI_STIMULU: " & tmp_stimul_idx)
+      ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/" & tmp_stimul_idx & ".bmp")
+      Form1.stimul("/ratbox/stimuls/" & tmp_stimul_idx & ".bmp")
+      WAIT 
+
+      IF konfigurace_experiment_casovani = TRUE THEN 
+        IF tmp_stimul_idx = 1 THEN 
+          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s1)
+          Label26.BackColor = Color.Green
+          Pauza(konfigurace_experiment_casovani_s1)
+          Label26.BackColor = Color.Background
+        ENDIF   
+        IF tmp_stimul_idx = 2 THEN 
+          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s2)
+          Label27.BackColor = Color.Green
+          Pauza(konfigurace_experiment_casovani_s2)
+          Label27.BackColor = Color.Background
+        ENDIF   
+        IF tmp_stimul_idx = 3 THEN 
+          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s3)
+          Label28.BackColor = Color.Green
+          Pauza(konfigurace_experiment_casovani_s3)
+          Label28.BackColor = Color.Background
+        ENDIF   
+        IF tmp_stimul_idx = 4 THEN 
+          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s4)
+          Label29.BackColor = Color.Green
+          Pauza(konfigurace_experiment_casovani_s4)
+          Label29.BackColor = Color.Background
+        ENDIF   
+        IF tmp_stimul_idx = 5 THEN 
+          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s5)
+          Label30.BackColor = Color.Green
+          Pauza(konfigurace_experiment_casovani_s5)
+          Label30.BackColor = Color.Background
+        ENDIF   
+        IF tmp_stimul_idx = 6 THEN 
+          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s6)
+          Label31.BackColor = Color.Green
+          Pauza(konfigurace_experiment_casovani_s6)
+          Label31.BackColor = Color.Background
+        ENDIF   
+      ELSE 
+        Label12.BackColor = Color.Green
+        ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_cas_zobrazeni_stimulu)
+        Pauza(konfigurace_experiment_cas_zobrazeni_stimulu)      
+        Label12.BackColor = Color.Background
+      ENDIF 
+      
+      IF konfigurace_experiment_vypni_stimul = TRUE THEN 
+        ChkZhasniStimul.BackColor = Color.Green
+        ExpLogWrite("EXPERIMENT_ZHASNUTI_STIMULU")
+        Form1.stimul("/ratbox/stimuls/clear.bmp")
+        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
+        ChkZhasniStimul.BackColor = Color.Background
+      ENDIF
+      
+      IF konfigurace_experiment_vypni_stimul_pauza_enable = TRUE THEN 
+        Label13.BackColor = Color.Green
+        ExpLogWrite("EXPERIMENT_CAS_BEZ_STIMULU: " & konfigurace_experiment_cas_zhasnuteho_stimulu)
+        Pauza(konfigurace_experiment_cas_zhasnuteho_stimulu)
+        Label13.BackColor = Color.Background
+      ENDIF       
+      
+      ExpLogWrite("EXPERIMENT_OTEVRENI_DVERI")
+      LabelPre6.BackColor = Color.Green
+      AparaturaOtevriDvere()
+      Pauza(3)
+      ExpLogWrite("EXPERIMENT_DVERE_OTEVRENY")
+      LabelPre6.BackColor = Color.Background
+      
+      LabelPre7.BackColor = Color.Green
+      stav_sloty = 0
+      InputBlock = FALSE
+      ExpLogWrite("EXPERIMENT_CEKANI_NA_REAKCI_POTKANA")
+      TimeoutCountingStart()
+      WHILE (stav_sloty = 0) AND (konfigurace_timeout > buffer_timeout)
+        WAIT 
+      WEND 
+      TimeoutCountingStop()
+      LabelPre7.BackColor = Color.Background
+      buffer_sloty_aktual_state = stav_sloty
+      stav_sloty = 0
+
+
+      IF buffer_sloty_aktual_state = 0 THEN 
+        ExpLogWrite("EXPERIMENT_TIMEOUT")  
+        GOTO exp_reset
+      ENDIF 
+      
+      ExpLogWrite("EXPERIMENT_REAKCE_POTKANA: " & buffer_sloty_aktual_state)
+
+      IF buffer_sloty_aktual_state <> tmp_stimul_idx THEN 
+        ExpLogWrite("EXPERIMENT_POKTKAN_SPATNA_VOLBA: " & buffer_sloty_aktual_state & " ,OCEKAVANO: " & tmp_stimul_idx)
+        GOTO exp_reset
+      ENDIF       
+      
+      IF buffer_sloty_aktual_state = tmp_stimul_idx THEN
+        ExpLogWrite("EXPERIMENT_POTKAN_SPRAVNA_VOLBA: " & buffer_sloty_aktual_state)
+        ExpLogWrite("EXPERIMENT_NASTAVUJI_PITKO: " & tmp_stimul_idx)
+        LabelPre8.BackColor = Color.Green
+        AparaturaNastavPitko(tmp_stimul_idx)
+        Pauza(3)
+        LabelPre8.BackColor = Color.Background
+        ExpLogWrite("EXPERIMENT_PAUZA_NA_PITI: " & konfigurace_experiment_cas_piti)
+        Label36.BackColor = Color.Green
+        Pauza(konfigurace_experiment_cas_piti)
+        Label36.BackColor = Color.Background 
+      ENDIF 
+            
+      exp_reset:
+      ExpLogWrite("EXPERIMENT_RESET_APARATURY")
+      Label20.BackColor = Color.Green
+      AparaturaReset()
+      Pauza(3)
+      Label20.BackColor = Color.Background
+      
+      IF konfigurace_experiment_cas_dalsi_ciklus > 0 THEN 
+        ExpLogWrite("EXPERIMENT_PAUZA_PRED_DALSIM_CYKLEM: " & konfigurace_experiment_cas_dalsi_ciklus)
+        Label25.BackColor = Color.Green
+        Pauza(konfigurace_experiment_cas_dalsi_ciklus)
+        Label25.BackColor = Color.Background
+      ENDIF 
+      
+      ExpLogWrite("EXPERIMENT_KONEC_CYKLU: " & tmp_cyklus)
+      tmp_cyklus = tmp_cyklus + 1
+    WEND
+    ExpLogWrite("EXPERIMENT_KONEC")
+    SysLogWrite("EXPERIMENT_KONEC") 
+    TimerExperimentMils.Enabled = FALSE
+  ENDIF 
+
+END
+
+PUBLIC SUB TimeoutCountingStop()
+  TmrTimeout.Enabled = FALSE
+  buffer_timeout = 0
+END
+
+PUBLIC SUB TimeoutCountingStart()
+  buffer_timeout = 0
+  TmrTimeout.Enabled = TRUE
+END
+
+PUBLIC SUB TmrTimeout_Timer()
+  IF (buffer_timeout + 1) > konfigurace_timeout THEN TmrTimeout.Enabled = FALSE 
+  buffer_timeout = buffer_timeout + 1
+  TxtInfoTimeout.Text = Str(buffer_timeout)
+  PosliInfo()
+  WAIT 
+END
+
+PUBLIC SUB BtnPreStop_Click()
+  STOP_State = TRUE
+  SysLogWrite("UZIVATELSKE_UKONCENI_CYKLU")
+END
+
+PUBLIC SUB BtnExpFull_Click()
+  IF mod_idx = 0 THEN BtnMod_Click()
+  FMain.Visible = FALSE 
+  Form1.FullScreen = TRUE
+  Form1.Visible = TRUE
+  Form1.stimul("/ratbox/stimuls/clear.bmp")
+END
+
+PUBLIC SUB BtnKonfUloz_Click()
+DIM i AS Integer
+DIM kontrola AS Boolean
+  kontrola = FALSE
+  IF Len(TxtKonfigNazev.Text) = 0 THEN 
+    ErrLogWrite("Ukladani_profilu_nulova_velikost_nazvu")
+    Message("Zadejte nazev profilu 1 - 16 znaku, pouze cisla a pismena....")
+    GOTO Konec
+  ENDIF 
+  IF Len(TxtKonfigNazev.Text) > 16 THEN 
+    ErrLogWrite("Ukladani_profilu_moc_dlouhy_nazev")
+    ErrLogWrite("Ukladani_profilu_nazev: " & TxtKonfigNazev.Text)
+    ErrLogWrite("Ukladani_profilu_nazev_delka: " & Str(Len(TxtKonfigNazev.Text)))
+    Message("Moc dlouhy nazev profilu. Pouze 1 - 16 znaku, pouze cisla a pismena....")
+    TxtKonfigNazev.text = ""
+    GOTO Konec
+  ENDIF 
+  kontrola = TRUE
+  FOR i = 0 TO Len(TxtKonfigNazev.Text) - 1
+    IF ((Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) < 58) AND (Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) > 47)) OR ((Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) < 91) AND (Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) > 64)) OR ((Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) < 123) AND (Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) > 96)) THEN
+    ELSE 
+      kontrola = FALSE
+    ENDIF 
+  NEXT 
+  IF kontrola = FALSE THEN 
+    ErrLogWrite("Ukladani_profilu_nepovoleny_znak_nazev_: " & TxtKonfigNazev.Text)
+    FOR i = 0 TO Len(TxtKonfigNazev.Text) - 1
+      IF ((Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) < 58) AND (Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) > 47)) OR ((Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) < 91) AND (Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) > 64)) OR ((Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) < 123) AND (Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) > 96)) THEN
+      ELSE 
+        ErrLogWrite("Znak-KO ASCII CODE: " & Mid(TxtKonfigNazev.Text, i + 1, 1) & " " & Asc(Mid(TxtKonfigNazev.Text, i + 1, 1)) & " POZICE: " & i + 1)
+      ENDIF 
+    NEXT        
+    Message("Nazev_profilu_obsahuje_nepovoleny_znak.Pouze 1 - 16 znaku, pouze cisla a pismena....")
+    GOTO Konec
+  ENDIF      
+  SysLogWrite("Ukladani_uzivatelskeho_profilu: " & TxtKonfigNazev.Text)
+  UlozUserCfg(TxtKonfigNazev.Text)
+  CfgList()
+  Konec:
+  CfgList()
+  TxtKonfigNazev.Text = ""
+END
+
+SUB CfgList()
+DIM File AS String
+  ListBox1.Clear
+  SysLogWrite("Obnoveni_seznamu_profilu...")
+  FOR EACH File IN Dir("/ratbox/konfigurace/", "*.rbconf")
+    ListBox1.Add(Mid(File, 1, Len(File) - 7))
+  NEXT
+END
+
+PUBLIC SUB Button1_Click()
+  CfgList()
+END
+
+PUBLIC SUB ListBox1_Select()
+  TxtKonfigNazev.Text = ListBox1.Text
+END
+
+PUBLIC SUB BtnSmazKonfiguraci_Click()
+DIM CfgName AS String
+  CfgName = TxtKonfigNazev.Text
+  SysLogWrite("Smazani_uzivatelskeho_profilu: " & CfgName)
+  IF Exist("/ratbox/konfigurace/" & CfgName & ".rbconf") = FALSE THEN 
+    Message("Profil: " & CfgName & " neexistuje a proto nemuze byt smazan....")
+    ErrLogWrite("SMAZANI_PROFILU: CHYBA - PROFIL NEEXISTUJE")
+    CfgList()
+  ELSE 
+    IF Message.Warning("Profil: " & CfgName & " bude nenavratne smazan. Opravdu SMAZAT ?", "NE", "ANO") = 2 THEN 
+      SHELL ("rm /ratbox/konfigurace/" & CfgName & ".rbconf")
+      FINALLY 
+      IF ERROR THEN 
+        ErrLogWrite("Chyba pri mazani profilu:  " & "/ratbox/konfigurace/" & CfgName & ".rbconf   " & Error.Text)
+        Message("Chyba pri mazani profilu: " & CfgName)
+      ENDIF 
+      CfgList()
+      Message("Profil: " & CfgName & " byl uspesne smazan....")
+      SysLogWrite("Profil: " & CfgName & "smazan...")
+    ELSE
+      SysLogWrite("Smazani_profilu: " & CfgName & " stornovano..") 
+    ENDIF  
+  ENDIF 
+  CfgList()
+  TxtKonfigNazev.text = ""
+END
+
+PUBLIC SUB BtnNahrajKonfiguraci_Click()
+  IF Len(TxtKonfigNazev.text) = 0 THEN 
+    Message("Vyberte profil - klikem v seznamu vedle")
+    GOTO nahrajkonec
+  ENDIF 
+  IF Exist("/ratbox/konfigurace/" & TxtKonfigNazev.Text & ".rbconf") = FALSE THEN
+    Message("Soubor profilu: " & TxtKonfigNazev.Text & " nenalezen")
+    TxtKonfigNazev.Text = ""
+    GOTO nahrajkonec
+  ELSE  
+    UserCfgLoad(TxtKonfigNazev.Text)
+  ENDIF 
+  nahrajkonec:
+  CfgList()
+  TxtKonfigNazev.Text = ""
+END
+
+SUB UserCfgLoad(CfgProfil AS String)
+DIM linc AS Integer
+DIM lin AS String
+DIM arr_strings AS String[]
+  SysLogWrite("OBNOVENI_PARAMETRU_Z_PROFILU: " & CfgProfil)
+  IF Exist("/ratbox/konfigurace/" & CfgProfil & ".rbconf") = FALSE THEN 
+    Message("Soubor profilu: " & "/ratbox/konfigurace/" & CfgProfil & ".rbconf" & " je neplatny !!")
+  ENDIF   
+  arr_strings = Split(File.LOAD("/ratbox/konfigurace/" & CfgProfil & ".rbconf"), "\n")
+  FINALLY 
+  IF ERROR THEN 
+    ErrLogWrite("Chyba pri nahravani profilu: " & "/ratbox/konfigurace/" & CfgProfil & ".rbconf " & Error.Text)
+    Message("Chyba pri nahravani profilu: " & "/ratbox/konfigurace/" & CfgProfil & ".rbconf")
+  ENDIF 
+  FOR EACH lin IN arr_strings
+    lin = arr_strings[linc]
+    IF linc = 1 THEN TxtCommPort.text = lin
+    IF linc = 2 THEN TxtPocetCiklu.Text = lin
+    IF linc = 3 THEN TxtTimeout.Text = lin
+    IF (linc = 4) AND (lin = "True") THEN ChkTimeout.Value = TRUE
+    IF (linc = 4) AND (lin = "False") THEN ChkTimeout.Value = FALSE
+    IF linc = 5 THEN TxtPreCasPiti.Text = lin
+    IF linc = 6 THEN TxtPrePauza.Text = lin
+    IF (linc = 7) AND (lin = "True") THEN ChkPrePauza.Value = TRUE
+    IF (linc = 7) AND (lin = "False") THEN ChkPrePauza.Value = FALSE
+    IF (linc = 8) AND (lin = "True") THEN ChkPreNeopakovat.Value = TRUE
+    IF (linc = 8) AND (lin = "False") THEN ChkPreNeopakovat.Value = FALSE
+    IF (linc = 9) AND (lin = "True") THEN ChkExpNahoda.Value = TRUE
+    IF (linc = 9) AND (lin = "False") THEN ChkExpNahoda.Value = FALSE
+    IF (linc = 10) AND (lin = "True") THEN ChkExpNeopakovat.Value = TRUE
+    IF (linc = 10) AND (lin = "False") THEN ChkExpNeopakovat.Value = FALSE
+    IF linc = 11 THEN ExperimentTxtTime0.Text = lin
+    IF linc = 12 THEN ExperimentTxtTime3.Text = lin
+    IF linc = 13 THEN ExperimentTxtTime1.Text = lin
+    IF linc = 14 THEN ExperimentTxtTime2.Text = lin
+    IF (linc = 15) AND (lin = "True") THEN ChkZhasniStimul.Value = TRUE
+    IF (linc = 15) AND (lin = "False") THEN ChkZhasniStimul.Value = FALSE
+    IF (linc = 16) AND (lin = "True") THEN ChkVypStimulPauza.Value = TRUE
+    IF (linc = 16) AND (lin = "False") THEN ChkVypStimulPauza.Value = FALSE
+    IF (linc = 17) AND (lin = "True") THEN ExpChkEnableTiming.Value = TRUE
+    IF (linc = 17) AND (lin = "False") THEN ExpChkEnableTiming.Value = FALSE
+    IF (linc = 18) AND (lin = "True") THEN ExpChkSTime.Value = TRUE
+    IF (linc = 18) AND (lin = "False") THEN ExpChkSTime.Value = FALSE
+    IF (linc = 19) AND (lin = "True") THEN ExpChkSTime2.Value = TRUE
+    IF (linc = 19) AND (lin = "False") THEN ExpChkSTime2.Value = FALSE
+    IF (linc = 20) AND (lin = "True") THEN ExpChkSTime3.Value = TRUE
+    IF (linc = 20) AND (lin = "False") THEN ExpChkSTime3.Value = FALSE
+    IF (linc = 21) AND (lin = "True") THEN ExpChkSTime4.Value = TRUE
+    IF (linc = 21) AND (lin = "False") THEN ExpChkSTime4.Value = FALSE
+    IF (linc = 22) AND (lin = "True") THEN ExpChkSTime5.Value = TRUE
+    IF (linc = 22) AND (lin = "False") THEN ExpChkSTime5.Value = FALSE
+    IF (linc = 23) AND (lin = "True") THEN ExpChkSTime6.Value = TRUE
+    IF (linc = 23) AND (lin = "False") THEN ExpChkSTime6.Value = FALSE
+    IF linc = 24 THEN ExpTxtS1Time.Text = lin
+    IF linc = 25 THEN ExpTxtS2Time.Text = lin
+    IF linc = 26 THEN ExpTxtS3Time.Text = lin
+    IF linc = 27 THEN ExpTxtS4Time.Text = lin
+    IF linc = 28 THEN ExpTxtS5Time.Text = lin
+    IF linc = 29 THEN ExpTxtS6Time.Text = lin
+    IF linc = 30 THEN mod_idx = Val(lin)
+    IF (linc = 30) AND (lin = "0") THEN BtnMod.Text = "PreLearning"  
+    IF (linc = 30) AND (lin = "1") THEN BtnMod.Text = "Experiment"  
+    linc = linc + 1
+  NEXT 
+  SysLogWrite("PARAMETRY_PROFILU_NASTAVENY")
+END
+
+PUBLIC SUB PosliInfo()
+  
+    Form1.cyklusinfo("Cyklus:" & Str(tmp_cyklus + 1) & "/" & Str(konfigurace_pocet_cyklu) & "  PauzaTMR:" & Str(buffer_casovac) & "  TimeoutTMR:" & Str(buffer_timeout))
+
+  
 END
 
 
 PUBLIC SUB remstart()
+  
+  BtnPreStart_Click()
+  
+END
 
-BtnPreStart_Click
+PUBLIC SUB TimerExperimentMils_Timer()
 
-END 
-
-
-
-PUBLIC SUB BtnExpFull_Click()
-
-   Form1.Visible = TRUE
+  tmp_mils = tmp_mils + 1
 
 END
