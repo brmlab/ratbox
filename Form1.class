@@ -15,18 +15,11 @@ PUBLIC SUB stimul(xxx AS String)
 END
 
 PUBLIC SUB loginfo(aaa AS String)
-  
   Label1.Text = aaa
-  
 END
-
 PUBLIC SUB cyklusinfo(bbb AS String)
-  
   label2.Text = bbb
-  
 END
-
-
 
 PUBLIC SUB PictureBox1_DblClick()
   Form1.FullScreen = FALSE
@@ -37,23 +30,17 @@ WAIT
 END
 
 PUBLIC SUB Form_Resize()
-
-   PictureBox1.Width = Form1.Width
+  PictureBox1.Width = Form1.Width
   PictureBox1.Height = Form1.Height
-
 END
 
 PUBLIC SUB Form_Show()
-WAIT 
-   PictureBox1.Width = Form1.Width
-  PictureBox1.Height = Form1.Height
-WAIT 
+  WAIT 
+    PictureBox1.Width = Form1.Width
+    PictureBox1.Height = Form1.Height
+  WAIT 
 END
 
-
-
 PUBLIC SUB PictureBox1_Menu()
-
- FMain.remstart()
-
+  FMain.remstart()
 END

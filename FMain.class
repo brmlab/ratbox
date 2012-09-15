@@ -17,6 +17,8 @@ PUBLIC konfigurace_experiment_neopakovat AS Boolean
 PUBLIC konfigurace_experiment_vypni_stimul AS Boolean
 PUBLIC konfigurace_experiment_vypni_stimul_pauza_enable AS Boolean
 PUBLIC konfigurace_experiment_casovani AS Boolean
+PUBLIC konfigurace_experiment_vypni_stimul_prereset AS Boolean
+PUBLIC konfigurace_experiment_vypni_stimul_poakci AS Boolean
 
 PUBLIC konfigurace_experiment_slot_enable_1 AS Boolean
 PUBLIC konfigurace_experiment_slot_enable_2 AS Boolean
@@ -32,11 +34,28 @@ PUBLIC konfigurace_experiment_casovani_s4 AS Integer
 PUBLIC konfigurace_experiment_casovani_s5 AS Integer
 PUBLIC konfigurace_experiment_casovani_s6 AS Integer
 
+PUBLIC pre_stat_ciklus AS Integer
+PUBLIC pre_stat_ciklus_real AS Integer
+PUBLIC pre_stat_timeout AS Integer
+PUBLIC pre_stat_opakovani AS NEW Integer[7]
+PUBLIC pre_stat_zakazano AS NEW Integer[7]
+PUBLIC pre_stat_aktivita AS NEW Integer[7]
+
+PUBLIC exp_stat_ciklus AS Integer
+PUBLIC exp_stat_ciklus_real AS Integer
+PUBLIC exp_stat_timeout AS Integer
+PUBLIC exp_stat_opakovani AS NEW Integer[7]
+PUBLIC exp_stat_zakazano AS NEW Integer[7]
+PUBLIC exp_stat_aktivita AS NEW Integer[7]
+PUBLIC exp_stat_souhrn AS NEW Integer[7, 7]
+
 PUBLIC stav_sloty AS Integer
 PUBLIC simulace_zacenichani AS Boolean
 PUBLIC mod_idx AS Integer
 PUBLIC buffer_casovac AS Integer
 PUBLIC status_casovac AS Boolean
+PUBLIC buffer_casovac_milis AS Integer
+PUBLIC status_casovac_milis AS Boolean
 PUBLIC buffer_timeout AS Integer
 PUBLIC buffer_sloty_aktual_state AS Integer
 PUBLIC buffer_sloty_last_state AS Integer
@@ -47,9 +66,47 @@ PUBLIC tmp_cyklus AS Integer
 PUBLIC tmp_stimul_idx AS Integer
 PUBLIC tmp_stimul_last AS Integer
 PUBLIC tmp_mils AS Long
+PUBLIC ExpLogName AS String
+PUBLIC PreLogName AS String
+
+PUBLIC TimeoutOpakReset AS Boolean
+
+PUBLIC SUB PreStatInit()
+DIM i AS Integer
+  pre_stat_ciklus = 0
+  pre_stat_ciklus_real = 0
+  pre_stat_timeout = 0
+  FOR i = 0 TO 6
+  pre_stat_opakovani[i] = 0
+  pre_stat_zakazano[i] = 0
+  pre_stat_aktivita[i] = 0
+  NEXT 
+END
+
+PUBLIC SUB ExpStatInit()
+DIM i, x AS Integer
+  pre_stat_ciklus = 0
+  pre_stat_ciklus_real = 0
+  pre_stat_timeout = 0
+  FOR i = 0 TO 6
+  pre_stat_opakovani[i] = 0
+  pre_stat_zakazano[i] = 0
+  pre_stat_aktivita[i] = 0
+  NEXT 
+  FOR i = 0 TO 6
+    FOR x = 0 TO 6
+      exp_stat_souhrn[x, i] = 0
+    NEXT 
+  NEXT 
+END
 
 
 PUBLIC SUB Form_Open()
+  
+  IF Exist("/ratbox/system/logo.png") = TRUE THEN 
+    PictureLogo1.Picture = Picture.Load("/ratbox/system/logo.png")
+  ENDIF 
+  
   FMain.Visible = TRUE
   FMain.FullScreen = TRUE
   SysLogWrite("Startuji_System.........")
@@ -119,32 +176,375 @@ END
 
 PUBLIC SUB ExpLogWrite(Udalost AS String)
 DIM SysLogFile AS File
-  IF Exist("/ratbox/log/last_experiment.log") = TRUE THEN 
-    SysLogFile = OPEN "/ratbox/log/last_experiment.log" FOR APPEND
-    PRINT #SysLogFile, Str(tmp_mils) & ";" & Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & ";" & udalost 
+  IF Exist("/ratbox/log/" & ExpLogName) = TRUE THEN 
+    SysLogFile = OPEN "/ratbox/log/" & ExpLogName FOR APPEND
+    PRINT #SysLogFile, Str(tmp_mils * 10) & ";" & udalost 
     Form1.loginfo(Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & udalost)
     SysLogFile.Close
   ENDIF 
 END
 
+PUBLIC SUB PreLogWrite(Udalost AS String)
+DIM SysLogFile AS File
+  IF Exist("/ratbox/log/" & PreLogName) = TRUE THEN 
+    SysLogFile = OPEN "/ratbox/log/" & PreLogName FOR APPEND
+    PRINT #SysLogFile, Str(tmp_mils * 10) & ";" & udalost 
+    Form1.loginfo(Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & udalost)
+    SysLogFile.Close
+  ENDIF 
+END
+
+PUBLIC SUB PreStatWrite()
+DIM zakazane AS Integer
+DIM opakovani AS Integer
+DIM aktivity AS Integer
+DIM i AS Integer
+DIM SysLogFile AS File
+  IF Exist("/ratbox/log/" & PreLogName) = TRUE THEN 
+    Form1.loginfo(Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & "GENERUJI_ZAPISUJI_STATISTIKU")
+    SysLogFile = OPEN "/ratbox/log/" & PreLogName FOR APPEND
+    PRINT #SysLogFile, "----------------------------------------------------------------------------" 
+
+    PRINT #SysLogFile, "CELKOVY_POCET_CYKLU: " & pre_stat_ciklus 
+    PRINT #SysLogFile, "CELKOVY_POCET_USPESNYCH_CYKLU (PITI): " & pre_stat_ciklus_real
+    PRINT #SysLogFile, "CELKOVY_POCET_TIMEOUTU: " & pre_stat_timeout 
+    FOR i = 1 TO 6
+      aktivity = aktivity + pre_stat_aktivita[i]
+    NEXT     
+    FOR i = 1 TO 6
+      opakovani = opakovani + pre_stat_opakovani[i]
+    NEXT     
+    FOR i = 1 TO 6
+      zakazane = zakazane + pre_stat_zakazano[i]
+    NEXT     
+    PRINT #SysLogFile, "CELKOVY_POCET_AKTIVIT: " & aktivity 
+    PRINT #SysLogFile, "CELKOVY_POCET_OPAKOVANI: " & opakovani 
+    PRINT #SysLogFile, "CELKOVY_POCET_ZAKAZANI: " & zakazane 
+    PRINT #SysLogFile, "CELKOVY_POCET_AKTIVIT_PODROBNE: " & pre_stat_aktivita[1] & ";" & pre_stat_aktivita[2] & ";" & pre_stat_aktivita[3] & ";" & pre_stat_aktivita[4] & ";" & pre_stat_aktivita[5] & ";" & pre_stat_aktivita[6] 
+    PRINT #SysLogFile, "CELKOVY_POCET_OPAKOVANI_PODROBNE: " & pre_stat_opakovani[1] & ";" & pre_stat_opakovani[2] & ";" & pre_stat_opakovani[3] & ";" & pre_stat_opakovani[4] & ";" & pre_stat_opakovani[5] & ";" & pre_stat_opakovani[6] 
+    PRINT #SysLogFile, "CELKOVY_POCET_ZAKAZANI_PODROBNE: " & pre_stat_zakazano[1] & ";" & pre_stat_zakazano[2] & ";" & pre_stat_zakazano[3] & ";" & pre_stat_zakazano[4] & ";" & pre_stat_zakazano[5] & ";" & pre_stat_zakazano[6] 
+
+    SysLogFile.Close
+    
+    PreStatInit()
+    
+  ENDIF 
+END
+
+PUBLIC SUB ExpStatWrite()
+DIM zakazane AS Integer
+DIM opakovani AS Integer
+DIM aktivity AS Integer
+DIM i, x AS Integer
+DIM SysLogFile AS File
+  IF Exist("/ratbox/log/" & ExpLogName) = TRUE THEN 
+    Form1.loginfo(Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") & "_" & "GENERUJI_ZAPISUJI_STATISTIKU")
+    SysLogFile = OPEN "/ratbox/log/" & ExpLogName FOR APPEND
+    PRINT #SysLogFile, "----------------------------------------------------------------------------" 
+
+    PRINT #SysLogFile, "CELKOVY_POCET_CYKLU: " & exp_stat_ciklus 
+    PRINT #SysLogFile, "CELKOVY_POCET_USPESNYCH_CYKLU (PITI): " & exp_stat_ciklus_real
+    PRINT #SysLogFile, "CELKOVY_POCET_TIMEOUTU: " & exp_stat_timeout 
+    FOR i = 1 TO 6
+      aktivity = aktivity + exp_stat_aktivita[i]
+    NEXT     
+    FOR i = 1 TO 6
+      opakovani = opakovani + exp_stat_opakovani[i]
+    NEXT     
+    FOR i = 1 TO 6
+      zakazane = zakazane + exp_stat_zakazano[i]
+    NEXT     
+    PRINT #SysLogFile, "CELKOVY_POCET_AKTIVIT: " & aktivity 
+    PRINT #SysLogFile, "CELKOVY_POCET_OPAKOVANI: " & opakovani 
+    PRINT #SysLogFile, "CELKOVY_POCET_ZAKAZANI: " & zakazane 
+    PRINT #SysLogFile, "CELKOVY_POCET_AKTIVIT_PODROBNE: " & exp_stat_aktivita[1] & ";" & exp_stat_aktivita[2] & ";" & exp_stat_aktivita[3] & ";" & exp_stat_aktivita[4] & ";" & exp_stat_aktivita[5] & ";" & exp_stat_aktivita[6] 
+    PRINT #SysLogFile, "CELKOVY_POCET_OPAKOVANI_PODROBNE: " & exp_stat_opakovani[1] & ";" & exp_stat_opakovani[2] & ";" & exp_stat_opakovani[3] & ";" & exp_stat_opakovani[4] & ";" & exp_stat_opakovani[5] & ";" & exp_stat_opakovani[6] 
+    PRINT #SysLogFile, "CELKOVY_POCET_ZAKAZANI_PODROBNE: " & exp_stat_zakazano[1] & ";" & exp_stat_zakazano[2] & ";" & exp_stat_zakazano[3] & ";" & exp_stat_zakazano[4] & ";" & exp_stat_zakazano[5] & ";" & exp_stat_zakazano[6] 
+
+    PRINT #SysLogFile, "---------------------------------------------------------------"
+    PRINT #SysLogFile, ""
+    PRINT #SysLogFile, "Souhrnna tabulka odpovedi:"
+    PRINT #SysLogFile, ""
+
+    PRINT #SysLogFile, "STIMUL: 1;2;3;4;5;6"
+    
+    PRINT #SysLogFile, "SLOT1: " & exp_stat_souhrn[1, 1] & ";" & exp_stat_souhrn[2, 1] & ";" & exp_stat_souhrn[3, 1] & ";" & exp_stat_souhrn[4, 1] & ";" & exp_stat_souhrn[5, 1] & ";" & exp_stat_souhrn[6, 1] 
+    PRINT #SysLogFile, "SLOT2: " & exp_stat_souhrn[1, 2] & ";" & exp_stat_souhrn[2, 2] & ";" & exp_stat_souhrn[3, 2] & ";" & exp_stat_souhrn[4, 2] & ";" & exp_stat_souhrn[5, 2] & ";" & exp_stat_souhrn[6, 2] 
+    PRINT #SysLogFile, "SLOT3: " & exp_stat_souhrn[1, 3] & ";" & exp_stat_souhrn[2, 3] & ";" & exp_stat_souhrn[3, 3] & ";" & exp_stat_souhrn[4, 3] & ";" & exp_stat_souhrn[5, 3] & ";" & exp_stat_souhrn[6, 3] 
+    PRINT #SysLogFile, "SLOT4: " & exp_stat_souhrn[1, 4] & ";" & exp_stat_souhrn[2, 4] & ";" & exp_stat_souhrn[3, 4] & ";" & exp_stat_souhrn[4, 4] & ";" & exp_stat_souhrn[5, 4] & ";" & exp_stat_souhrn[6, 4] 
+    PRINT #SysLogFile, "SLOT5: " & exp_stat_souhrn[1, 5] & ";" & exp_stat_souhrn[2, 5] & ";" & exp_stat_souhrn[3, 5] & ";" & exp_stat_souhrn[4, 5] & ";" & exp_stat_souhrn[5, 5] & ";" & exp_stat_souhrn[6, 5] 
+    PRINT #SysLogFile, "SLOT6: " & exp_stat_souhrn[1, 6] & ";" & exp_stat_souhrn[2, 6] & ";" & exp_stat_souhrn[3, 6] & ";" & exp_stat_souhrn[4, 6] & ";" & exp_stat_souhrn[5, 6] & ";" & exp_stat_souhrn[6, 6] 
+    
+' ExpStatInit()
+    
+    SysLogFile.Close
+    
+    ExpStatReset()
+    
+  ENDIF 
+END
+
+
+
+PUBLIC SUB ExpStatReset()
+DIM i, x AS Integer
+  exp_stat_ciklus = 0
+  exp_stat_ciklus_real = 0
+  exp_stat_timeout = 0
+    FOR i = 1 TO 6
+      exp_stat_aktivita[i] = 0
+    NEXT     
+    FOR i = 1 TO 6
+      exp_stat_opakovani[i] = 0
+    NEXT     
+    FOR i = 1 TO 6
+      exp_stat_zakazano[i] = 0
+    NEXT     
+    FOR x = 1 TO 6
+      FOR i = 1 TO 6
+        exp_stat_souhrn[x, i] = 0
+      NEXT     
+    NEXT 
+END
+
+
+
+
+
 PUBLIC SUB ExpLogInit()
+DIM StatTMP AS String
  DIM SysLogFile AS File
+    ExpLogName = Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh_nn_ss") & "E" & TxtExperimentID.Text & "S" & TxtSessionID.Text & "O" & TxtOjectID.Text & ".log"
     SysLogWrite("GENERUJI_LOG_EXPERIMENTU") 
-  IF Exist("/ratbox/log/last_experiment.log") = TRUE THEN 
-    SHELL ("mv /ratbox/log/last_experiment.log /ratbox/log/last_experiment.log.backup")
-    SHELL ("touch /ratbox/log/last_experiment.log")
+  IF Exist("/ratbox/log/" & ExpLogName) = TRUE THEN 
+    SHELL ("mv /ratbox/log/" & ExpLogName & " /ratbox/log/last_experiment.log.backup")
+    SHELL ("touch /ratbox/log/" & ExpLogName)
   ELSE 
-    SHELL ("touch /ratbox/log/last_experiment.log")
+    SHELL ("touch /ratbox/log/" & ExpLogName)
   ENDIF 
     SysLogWrite("ZAPISUJI_HLAVICKU_LOGU_EXPERIMENTU")
-    SysLogFile = OPEN "/ratbox/log/last_experiment.log" FOR APPEND
-    PRINT #SysLogFile, Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh:nn:ss") 
-    PRINT #SysLogFile, TxtExperimentID.Text
-    PRINT #SysLogFile, TxtPotkanID.Text 
-    PRINT #SysLogFile, "-----------------------------------------------------------" 
+    SysLogFile = OPEN "/ratbox/log/" & ExpLogName FOR APPEND
+    PRINT #SysLogFile, "ZACATEK_DAT;28" 
+    PRINT #SysLogFile, "<EXPERIMENT INFO>" 
+    PRINT #SysLogFile, "DATUM_EXPERIMENTU" & ";" & Format$(Now, "yyyy_mm_dd") & ";" & "CAS_EXPERIMENTU" & ";" & Format$(Now, "hh:nn:ss") 
+    PRINT #SysLogFile, "EXPERIMENT_ID" & ";" & TxtExperimentID.Text & ";" & "NULL" & ";" & "NULL"
+    PRINT #SysLogFile, "SESSION_ID" & ";" & TxtSessionID.Text & ";" & "NULL" & ";" & "NULL"
+    PRINT #SysLogFile, "OBJECT_ID" & ";" & TxtOjectID.Text & ";" & "NULL" & ";" & "NULL"
+    PRINT #SysLogFile, "<KONFIGURACE>" 
+    PRINT #SysLogFile, "NASTAVENI_POCET_CYKLU" & ";" & konfigurace_pocet_cyklu & ";" & "NULL" & ";" & "NULL" 
+    PRINT #SysLogFile, "NASTAVENI_TIMEOUT_REAKCE" & ";" & konfigurace_timeout & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_timeout_status = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_TIMEOUT_REAKCE_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_nahoda = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_NAHODA_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_neopakovat = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_NEOPAKOVAT_REAKCE_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    PRINT #SysLogFile, "NASTAVENI_CAS_ZOBRAZENI_STIMULU" & ";" & konfigurace_experiment_cas_zobrazeni_stimulu & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_vypni_stimul = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_VYPNI_STIMUL_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+    PRINT #SysLogFile, "NASTAVENI_CAS_BEZ_STIMULU" & ";" & konfigurace_experiment_cas_zhasnuteho_stimulu & ";" & "NULL" & ";" & "NULL" 
+
+
+    IF konfigurace_experiment_vypni_stimul_pauza_enable = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_CAS_BEZ_STIMULU_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+
+    IF konfigurace_experiment_vypni_stimul_prereset = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_VYPNI_STIMUL_PRERESET" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_vypni_stimul_poakci = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_VYPNI_STIMUL_POAKCI" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    PRINT #SysLogFile, "NASTAVENI_CAS_PITI" & ";" & konfigurace_experiment_cas_piti & ";" & "NULL" & ";" & "NULL" 
+    PRINT #SysLogFile, "NASTAVENI_PAUZA_MEZI_ZOBRAZENIMI" & ";" & konfigurace_experiment_cas_dalsi_ciklus & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_casovani = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_SEPARATANI_CASOVANI_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_slot_enable_1 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_CASOVANI_S1" & ";" & konfigurace_experiment_casovani_s1 & ";" & "SLOT_1_ENABLED" & ";" & StatTMP 
+
+    IF konfigurace_experiment_slot_enable_2 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_CASOVANI_S2" & ";" & konfigurace_experiment_casovani_s2 & ";" & "SLOT_2_ENABLED" & ";" & StatTMP 
+
+    IF konfigurace_experiment_slot_enable_3 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_CASOVANI_S3" & ";" & konfigurace_experiment_casovani_s3 & ";" & "SLOT_3_ENABLED" & ";" & StatTMP 
+
+    IF konfigurace_experiment_slot_enable_4 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_CASOVANI_S4" & ";" & konfigurace_experiment_casovani_s4 & ";" & "SLOT_4_ENABLED" & ";" & StatTMP 
+
+    IF konfigurace_experiment_slot_enable_5 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_CASOVANI_S5" & ";" & konfigurace_experiment_casovani_s5 & ";" & "SLOT_5_ENABLED" & ";" & StatTMP 
+
+
+    IF konfigurace_experiment_slot_enable_6 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_CASOVANI_S6" & ";" & konfigurace_experiment_casovani_s6 & ";" & "SLOT_6_ENABLED" & ";" & StatTMP 
+
+    PRINT #SysLogFile, "<FORMAT DAT>" 
+
+    PRINT #SysLogFile, "casova_osa(ms);parametr1;HODNOTA;parametr2;HODNOTA" 
+
+    PRINT #SysLogFile, "<DATA>" 
+
+
     SysLogFile.Close
 END
 
+PUBLIC SUB PreLogInit()
+DIM StatTMP AS String
+ DIM SysLogFile AS File
+    PreLogName = Format$(Now, "yyyy_mm_dd") & "_" & Format$(Now, "hh_nn_ss") & "_PreLearning_" & "E" & TxtExperimentID.Text & "S" & TxtSessionID.Text & "O" & TxtOjectID.Text & ".log"
+    SysLogWrite("GENERUJI_LOG_PreLearningu") 
+  IF Exist("/ratbox/log/" & PreLogName) = TRUE THEN 
+    SHELL ("mv /ratbox/log/" & PreLogName & " /ratbox/log/last_prelearning.log.backup")
+    SHELL ("touch /ratbox/log/" & PreLogName)
+  ELSE 
+    SHELL ("touch /ratbox/log/" & PreLogName)
+  ENDIF 
+    SysLogWrite("ZAPISUJI_HLAVICKU_LOGU_PreLearningu")
+    SysLogFile = OPEN "/ratbox/log/" & PreLogName FOR APPEND
+    PRINT #SysLogFile, "ZACATEK_DAT;28" 
+    PRINT #SysLogFile, "<EXPERIMENT INFO>" 
+    PRINT #SysLogFile, "DATUM_PreLearningu" & ";" & Format$(Now, "yyyy_mm_dd") & ";" & "CAS_PreLearningu" & ";" & Format$(Now, "hh:nn:ss") 
+    PRINT #SysLogFile, "PreLearning_ID" & ";" & TxtExperimentID.Text & ";" & "NULL" & ";" & "NULL"
+    PRINT #SysLogFile, "SESSION_ID" & ";" & TxtSessionID.Text & ";" & "NULL" & ";" & "NULL"
+    PRINT #SysLogFile, "OBJECT_ID" & ";" & TxtOjectID.Text & ";" & "NULL" & ";" & "NULL"
+    PRINT #SysLogFile, "<KONFIGURACE>" 
+    PRINT #SysLogFile, "NASTAVENI_POCET_CYKLU" & ";" & konfigurace_pocet_cyklu & ";" & "NULL" & ";" & "NULL" 
+    PRINT #SysLogFile, "NASTAVENI_TIMEOUT_REAKCE" & ";" & konfigurace_timeout & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_timeout = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_TIMEOUT_REAKCE_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_prelearning_neopakovat = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "NASTAVENI_NEOPAKOVAT_REAKCE_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    PRINT #SysLogFile, "NASTAVENI_CAS_DALSI_CYKLUS" & ";" & konfigurace_prelearning_cas_dalsi_ciklus & ";" & "NULL" & ";" & "NULL" 
+
+    PRINT #SysLogFile, "NASTAVENI_CAS_PITI" & ";" & konfigurace_prelearning_cas_piti & ";" & "NULL" & ";" & "NULL" 
+
+
+    IF konfigurace_experiment_slot_enable_1 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "SLOT_1_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_slot_enable_2 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "SLOT_2_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_slot_enable_3 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "SLOT_3_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_slot_enable_4 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "SLOT_4_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    IF konfigurace_experiment_slot_enable_5 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "SLOT_5_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+
+    IF konfigurace_experiment_slot_enable_6 = TRUE THEN
+      StatTMP = "TRUE"
+    ELSE 
+      StatTMP = "FALSE"
+    ENDIF 
+    PRINT #SysLogFile, "SLOT_6_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL" 
+
+    PRINT #SysLogFile, "<FORMAT DAT>" 
+
+    PRINT #SysLogFile, "casova_osa(ms);parametr1;HODNOTA;parametr2;HODNOTA" 
+
+    PRINT #SysLogFile, "<DATA>" 
+
+
+    SysLogFile.Close
+END
 
 
 PUBLIC SUB BtnPripoj_Click()
@@ -205,6 +605,25 @@ PUBLIC SUB Pauza(cas AS Integer)
   FINALLY 
   IF ERROR THEN 
     ErrLogWrite("NESYNCHRONI_UKONCENI - Pauza()  -  " & Error.Text) 
+  ENDIF  
+END
+
+PUBLIC SUB PauzaMilis(cas AS Integer)
+  IF status_casovac_milis = FALSE THEN 
+    status_casovac_milis = TRUE
+    buffer_casovac_milis = 0
+    TimerMilis.Enabled = TRUE
+    WHILE (cas / 10) > buffer_casovac_milis
+      WAIT 
+    WEND 
+    buffer_casovac_milis = 0
+    TimerMilis.Enabled = FALSE
+    TxtInfoCasovacMilis.text = Str(buffer_casovac) * 10
+    status_casovac_milis = FALSE
+  ENDIF 
+  FINALLY 
+  IF ERROR THEN 
+    ErrLogWrite("NESYNCHRONI_UKONCENI - PauzaMilis()  -  " & Error.Text) 
   ENDIF  
 END
 
@@ -430,12 +849,16 @@ END
 
 PUBLIC SUB BtnNastav_Click()
   SysLogWrite("UPLATNUJI_PARAMETRY")
-  UplatniParametry()
-  VypisParametry()
-  SysLogWrite("PARAMETRY_UPLATNENY")
-  SysLogWrite("UKLADAM_ZAKLADNI_KONFIGURACI")
-  UlozDefoult()
-  SysLogWrite("ZAKLADNI_KONFIGURACE_ULOZENA")
+  IF TestNastaveniExpCasu() = TRUE THEN 
+    UplatniParametry()
+    VypisParametry()
+    SysLogWrite("PARAMETRY_UPLATNENY")
+    SysLogWrite("UKLADAM_ZAKLADNI_KONFIGURACI")
+    UlozDefoult()
+    SysLogWrite("ZAKLADNI_KONFIGURACE_ULOZENA")
+  ELSE 
+    Message("! CHYBA ZADANEHO CASU: v rozliseni (ms) je minimalni hodnota 10")
+  ENDIF 
 END
 
 PUBLIC SUB VypisParametry()
@@ -461,10 +884,17 @@ PUBLIC SUB VypisParametry()
   IF konfigurace_experiment_vypni_stimul = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_ZHASNUTI_STIMULU: VYPNUTO")
   IF konfigurace_experiment_vypni_stimul_pauza_enable = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_PAUZA_ZHASLY_STIMUL: ZAPNUTO")
   IF konfigurace_experiment_vypni_stimul_pauza_enable = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_PAUZA_ZHASLY_STIMUL: VYPNUTO")
+
+  IF konfigurace_experiment_vypni_stimul_prereset = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_VYPNI_STIMUL_PRERESET: ZAPNUTO")
+  IF konfigurace_experiment_vypni_stimul_prereset = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_VYPNI_STIMUL_PRERESET: VYPNUTO")
+
+  IF konfigurace_experiment_vypni_stimul_poakci = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_VYPNI_STIMUL_POAKCI: ZAPNUTO")
+  IF konfigurace_experiment_vypni_stimul_poakci = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_VYPNI_STIMUL_POAKCI: VYPNUTO")
+
   SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_cas_zobrazeni_stimulu)  
   SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_PITI " & konfigurace_experiment_cas_piti)  
   SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_ZHASLY_STIMUL: " & konfigurace_experiment_cas_zhasnuteho_stimulu)  
-  SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_CIKLUS: " & konfigurace_experiment_cas_dalsi_ciklus)  
+  SysLogWrite("KONFIGURACE_EXPERIMENT_CAS_CYKLUS: " & konfigurace_experiment_cas_dalsi_ciklus)  
   IF konfigurace_experiment_slot_enable_1 = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_1: ZAPNUTO")
   IF konfigurace_experiment_slot_enable_1 = FALSE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_1: VYPNUTO")
   IF konfigurace_experiment_slot_enable_2 = TRUE THEN SysLogWrite("KONFIGURACE_EXPERIMENT_SLOT_2: ZAPNUTO")
@@ -486,34 +916,43 @@ PUBLIC SUB VypisParametry()
 END
 
 PUBLIC SUB UplatniParametry()
-  konfigurace_pocet_cyklu = Val(TxtPocetCiklu.Text)
-  konfigurace_timeout = Val(TxtTimeout.Text)
-  konfigurace_timeout_status = ChkTimeout.Value
-  konfigurace_prelearning_cas_piti = Val(TxtPreCasPiti.Text)
-  konfigurace_prelearning_cas_dalsi_ciklus = Val(TxtPrePauza.Text)
-  konfigurace_prelearning_pauza = ChkPrePauza.Value
-  konfigurace_prelearning_neopakovat = ChkPreNeopakovat.Value
-  konfigurace_experiment_nahoda = ChkExpNahoda.Value
-  konfigurace_experiment_neopakovat = ChkExpNeopakovat.Value
-  konfigurace_experiment_cas_zobrazeni_stimulu = Val(ExperimentTxtTime0.Text)
-  konfigurace_experiment_cas_piti = Val(ExperimentTxtTime3.Text)
-  konfigurace_experiment_cas_zhasnuteho_stimulu = Val(ExperimentTxtTime1.Text)
-  konfigurace_experiment_cas_dalsi_ciklus = Val(ExperimentTxtTime2.Text)
-  konfigurace_experiment_vypni_stimul = ChkZhasniStimul.Value
-  konfigurace_experiment_vypni_stimul_pauza_enable = ChkVypStimulPauza.Value
-  konfigurace_experiment_casovani = ExpChkEnableTiming.Value
-  konfigurace_experiment_slot_enable_1 = ExpChkSTime.Value
-  konfigurace_experiment_slot_enable_2 = ExpChkSTime2.Value
-  konfigurace_experiment_slot_enable_3 = ExpChkSTime3.Value
-  konfigurace_experiment_slot_enable_4 = ExpChkSTime4.Value
-  konfigurace_experiment_slot_enable_5 = ExpChkSTime5.Value
-  konfigurace_experiment_slot_enable_6 = ExpChkSTime6.Value
-  konfigurace_experiment_casovani_s1 = Val(ExpTxtS1Time.Text)
-  konfigurace_experiment_casovani_s2 = Val(ExpTxtS2Time.Text)
-  konfigurace_experiment_casovani_s3 = Val(ExpTxtS3Time.Text)
-  konfigurace_experiment_casovani_s4 = Val(ExpTxtS4Time.Text)
-  konfigurace_experiment_casovani_s5 = Val(ExpTxtS5Time.Text)
-  konfigurace_experiment_casovani_s6 = Val(ExpTxtS6Time.Text)
+  IF TestNastaveniExpCasu() = TRUE THEN 
+    konfigurace_pocet_cyklu = Val(TxtPocetCiklu.Text)
+    konfigurace_timeout = Val(TxtTimeout.Text)
+    konfigurace_timeout_status = ChkTimeout.Value
+    konfigurace_prelearning_cas_piti = Val(TxtPreCasPiti.Text)
+    konfigurace_prelearning_cas_dalsi_ciklus = Val(TxtPrePauza.Text)
+    konfigurace_prelearning_pauza = ChkPrePauza.Value
+    konfigurace_prelearning_neopakovat = ChkPreNeopakovat.Value
+    konfigurace_experiment_nahoda = ChkExpNahoda.Value
+    konfigurace_experiment_neopakovat = ChkExpNeopakovat.Value
+    konfigurace_experiment_cas_zobrazeni_stimulu = Val(ExperimentTxtTime0.Text)
+    konfigurace_experiment_cas_piti = Val(ExperimentTxtTime3.Text)
+    konfigurace_experiment_cas_zhasnuteho_stimulu = Val(ExperimentTxtTime1.Text)
+    konfigurace_experiment_cas_dalsi_ciklus = Val(ExperimentTxtTime2.Text)
+    konfigurace_experiment_vypni_stimul = ChkZhasniStimul.Value
+
+    konfigurace_experiment_vypni_stimul_prereset = ChkZhasniStimulPreReset.Value
+    konfigurace_experiment_vypni_stimul_poakci = ChkZhasniStimulPoAkci.Value
+
+    konfigurace_experiment_vypni_stimul_pauza_enable = ChkVypStimulPauza.Value
+    konfigurace_experiment_casovani = ExpChkEnableTiming.Value
+    konfigurace_experiment_slot_enable_1 = ExpChkSTime.Value
+    konfigurace_experiment_slot_enable_2 = ExpChkSTime2.Value
+    konfigurace_experiment_slot_enable_3 = ExpChkSTime3.Value
+    konfigurace_experiment_slot_enable_4 = ExpChkSTime4.Value
+    konfigurace_experiment_slot_enable_5 = ExpChkSTime5.Value
+    konfigurace_experiment_slot_enable_6 = ExpChkSTime6.Value
+    konfigurace_experiment_casovani_s1 = Val(ExpTxtS1Time.Text)
+    konfigurace_experiment_casovani_s2 = Val(ExpTxtS2Time.Text)
+    konfigurace_experiment_casovani_s3 = Val(ExpTxtS3Time.Text)
+    konfigurace_experiment_casovani_s4 = Val(ExpTxtS4Time.Text)
+    konfigurace_experiment_casovani_s5 = Val(ExpTxtS5Time.Text)
+    konfigurace_experiment_casovani_s6 = Val(ExpTxtS6Time.Text)
+    TimeoutOpakReset = ChkTimeoutOpakReset.Value
+  ELSE 
+    Message("! CHYBA ZADANEHO CASU: v rozliseni (ms) je minimalni hodnota 10")
+  ENDIF 
 END
 
 SUB UlozDefoult()
@@ -551,13 +990,19 @@ SUB UlozDefoult()
   PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s5)
   PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s6)  
   PRINT #DefKonfFile, Str(mod_idx)
+  PRINT #DefKonfFile, TimeoutOpakReset
+  PRINT #DefKonfFile, konfigurace_experiment_vypni_stimul_prereset
+  PRINT #DefKonfFile, konfigurace_experiment_vypni_stimul_poakci
+
   WAIT 
   DefKonfFile.Close
 END
 
 SUB UlozUserCfg(CfgName AS String)
   DIM DefKonfFile AS File
-  
+
+  UplatniParametry()
+    
   IF Exist("/ratbox/konfigurace/" & CfgName & ".rbconf") = FALSE THEN 
     Message("Profil: " & CfgName & " neexistuje a bude vytvoren......")
     SHELL ("touch /ratbox/konfigurace/" & CfgName & ".rbconf")
@@ -571,15 +1016,14 @@ SUB UlozUserCfg(CfgName AS String)
     ENDIF  
   ENDIF 
 
-
   cfgwrite:
 
   DefKonfFile = OPEN "/ratbox/konfigurace/" & CfgName & ".rbconf" FOR WRITE 
 
   FINALLY 
   IF ERROR THEN 
-    Message(Error.Text)
-    Message(Error.Text)
+    ErrLogWrite("CHYBA_PRI_ZAPISU_KONFIGURACE: " & Error.Text)
+    Message("CHYBA_PRI_ZAPISU_KONFIGURACE")
   ENDIF 
   
   WAIT 
@@ -614,6 +1058,10 @@ SUB UlozUserCfg(CfgName AS String)
   PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s5)
   PRINT #DefKonfFile, Str(konfigurace_experiment_casovani_s6)  
   PRINT #DefKonfFile, Str(mod_idx)
+  PRINT #DefKonfFile, TimeoutOpakReset
+  PRINT #DefKonfFile, konfigurace_experiment_vypni_stimul_prereset
+  PRINT #DefKonfFile, konfigurace_experiment_vypni_stimul_poakci
+
   WAIT 
   DefKonfFile.Close
   
@@ -677,6 +1125,12 @@ DIM arr_strings AS String[]
     IF linc = 30 THEN mod_idx = Val(lin)
     IF (linc = 30) AND (lin = "0") THEN BtnMod.Text = "PreLearning"  
     IF (linc = 30) AND (lin = "1") THEN BtnMod.Text = "Experiment"  
+    IF (linc = 31) AND (lin = "True") THEN ChkTimeoutOpakReset.Value = TRUE
+    IF (linc = 31) AND (lin = "False") THEN ChkTimeoutOpakReset.Value = FALSE
+    IF (linc = 32) AND (lin = "True") THEN ChkZhasniStimulPreReset.Value = TRUE
+    IF (linc = 32) AND (lin = "False") THEN ChkZhasniStimulPreReset.Value = FALSE
+    IF (linc = 33) AND (lin = "True") THEN ChkZhasniStimulPoAkci.Value = TRUE
+    IF (linc = 33) AND (lin = "False") THEN ChkZhasniStimulPoAkci.Value = FALSE
     linc = linc + 1
   NEXT 
   SysLogWrite("PARAMETRY_OBNOVENY")
@@ -690,22 +1144,31 @@ PUBLIC SUB TmrCasovac_Timer()
 END
 
 PUBLIC SUB BtnPreStart_Click()
+DIM exp_souhrn_stimul AS Integer
+DIM exp_souhrn_odpoved AS Integer
+
   SysLogWrite("UPLATNUJI_PARAMETRY")
   UplatniParametry()
   VypisParametry()
   SysLogWrite("PARAMETRY_UPLATNENY")
   STOP_State = FALSE
   tmp_cyklus = 0
-
+  Pauza(5)
   IF mod_idx = 0 THEN 
+    PreLogInit()
+    TimerExperimentMils.Enabled = TRUE
+    PreStatInit()
     SysLogWrite("PRELEARNING_START")
+    PreLogWrite("START" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
     WHILE (tmp_cyklus < konfigurace_pocet_cyklu) AND (STOP_State = FALSE)
-          
+      PreLogWrite("CYKLUS" & ";" & tmp_cyklus & ";" & "NULL" & ";" & "NaN")  
      ' PRELEARNING - KROK 1 - OTEVRENI DVERI START
+      PreLogWrite("OTEVRENI_DVERI" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
       LabelPre.BackColor = Color.Green
       AparaturaOtevriDvere()
       Pauza(3)
       LabelPre.BackColor = Color.Background
+      PreLogWrite("DVERE_OTEVRENY" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
       ' PRELEARNING - KROK 1 - OTEVRENI DVERI STOP
 
       WAIT 
@@ -726,43 +1189,63 @@ PUBLIC SUB BtnPreStart_Click()
       stav_sloty = 0
       
       SysLogWrite("PRELEARNING_POTKAN_AKTIVITA_" & Str(buffer_sloty_aktual_state))
+      pre_stat_aktivita[buffer_sloty_aktual_state] = pre_stat_aktivita[buffer_sloty_aktual_state] + 1
 
       IF buffer_sloty_aktual_state = 0 THEN 
         SysLogWrite("PRELEARNING_TIMEOUT")
+        PreLogWrite("TIMEOUT" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
+        IF TimeoutOpakReset = TRUE THEN buffer_sloty_last_state = 0
+        pre_stat_timeout = pre_stat_timeout + 1
         GOTO prelearning_reset
       ENDIF 
 
       IF (buffer_sloty_last_state = buffer_sloty_aktual_state) AND (konfigurace_prelearning_neopakovat = TRUE) THEN 
         SysLogWrite("PRELEARNING_POTKAN_OPAKOVANI")
+        PreLogWrite("OPAKOVANI" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")  
+        pre_stat_opakovani[buffer_sloty_last_state] = pre_stat_opakovani[buffer_sloty_last_state] + 1
         LabelPre2.BackColor = Color.Red
         Pauza(1)
         LabelPre2.BackColor = Color.Background
         buffer_sloty_aktual_state = 0
         GOTO cekani_potkan_akce
+      ELSE 
+        PreLogWrite("AKTIVITA" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")  
       ENDIF 
 
       IF (buffer_sloty_aktual_state = 1) AND (konfigurace_experiment_slot_enable_1 = FALSE) THEN 
         SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        PreLogWrite("NEPOVOLENY_SLOT" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")
+        pre_stat_zakazano[1] = pre_stat_zakazano[1] + 1  
         GOTO cekani_potkan_akce
       ENDIF 
       IF (buffer_sloty_aktual_state = 2) AND (konfigurace_experiment_slot_enable_2 = FALSE) THEN 
         SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        PreLogWrite("NEPOVOLENY_SLOT" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")  
+        pre_stat_zakazano[2] = pre_stat_zakazano[2] + 1  
         GOTO cekani_potkan_akce
       ENDIF 
       IF (buffer_sloty_aktual_state = 3) AND (konfigurace_experiment_slot_enable_3 = FALSE) THEN 
         SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        PreLogWrite("NEPOVOLENY_SLOT" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")  
+        pre_stat_zakazano[3] = pre_stat_zakazano[3] + 1  
         GOTO cekani_potkan_akce
       ENDIF 
       IF (buffer_sloty_aktual_state = 4) AND (konfigurace_experiment_slot_enable_4 = FALSE) THEN 
         SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        PreLogWrite("NEPOVOLENY_SLOT" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")  
+        pre_stat_zakazano[4] = pre_stat_zakazano[4] + 1  
         GOTO cekani_potkan_akce
       ENDIF 
       IF (buffer_sloty_aktual_state = 5) AND (konfigurace_experiment_slot_enable_5 = FALSE) THEN 
         SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        PreLogWrite("NEPOVOLENY_SLOT" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")  
+        pre_stat_zakazano[5] = pre_stat_zakazano[5] + 1  
         GOTO cekani_potkan_akce
       ENDIF 
       IF (buffer_sloty_aktual_state = 6) AND (konfigurace_experiment_slot_enable_6 = FALSE) THEN 
         SysLogWrite("PRELEARNING_NEPOVOLENY_SLOT_" & Str(buffer_sloty_aktual_state))
+        PreLogWrite("NEPOVOLENY_SLOT" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")  
+        pre_stat_zakazano[6] = pre_stat_zakazano[6] + 1  
         GOTO cekani_potkan_akce
       ENDIF 
       
@@ -774,9 +1257,11 @@ PUBLIC SUB BtnPreStart_Click()
       AparaturaNastavPitko(buffer_sloty_aktual_state)
       Pauza(3)
       LabelPre3.BackColor = Color.Background
+      PreLogWrite("NASTAVUJI_PITKO" & ";" & Str(buffer_sloty_aktual_state) & ";" & "NULL" & ";" & "NaN")  
       
       Label1.BackColor = Color.Green
       Pauza(konfigurace_prelearning_cas_piti)
+      pre_stat_ciklus_real = pre_stat_ciklus_real + 1
       Label1.BackColor = Color.Background
 
       prelearning_reset:      
@@ -790,15 +1275,17 @@ PUBLIC SUB BtnPreStart_Click()
         Pauza(konfigurace_prelearning_cas_dalsi_ciklus)
         ChkPrePauza.BackColor = Color.Background
       ENDIF 
-
     tmp_cyklus = tmp_cyklus + 1
+    pre_stat_ciklus = pre_stat_ciklus + 1          
     WEND
     
     tmp_cyklus = 0
     stav_sloty = 0
     
-    
+    PreLogWrite("KONEC" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
+    PreStatWrite()
     SysLogWrite("PRELEARNING_KONEC")
+    TimerExperimentMils.Enabled = FALSE
      
   ELSE IF mod_idx = 1 THEN 
     tmp_cyklus = 0
@@ -806,108 +1293,110 @@ PUBLIC SUB BtnPreStart_Click()
     tmp_stimul_idx = 0
     STOP_State = FALSE
     tmp_mils = 0
-
+    
     ExpLogInit()
     Pauza(5)
-    ExpLogWrite("EXPERIMENT_START")
+    ExpStatInit()
+    ExpLogWrite("START" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
     SysLogWrite("EXPERIMENT_START")    
-
+  
     WHILE (tmp_cyklus < konfigurace_pocet_cyklu) AND (STOP_State = FALSE)
       TimerExperimentMils.Enabled = TRUE
       exp_genstim:
-      ExpLogWrite("EXPERIMENT_ZACATEK_CYKLU: " & tmp_cyklus)  
+      ExpLogWrite("CYKLUS" & ";" & tmp_cyklus & ";" & "NULL" & ";" & "NaN")  
       IF konfigurace_experiment_nahoda = TRUE THEN 
         tmp_stimul_idx = Rnd(1, 7)    
-        ExpLogWrite("EXPERIMENT_NAHODNY_STIMUL: " & tmp_stimul_idx)
+      'ExpLogWrite("NAHODNY_STIMUL" & ";" & tmp_stimul_idx & ";" & "NULL" & ";" & "NaN")  
       ELSE 
         IF tmp_stimul_idx = 6 THEN tmp_stimul_idx = 0
         tmp_stimul_idx = tmp_stimul_idx + 1
-        ExpLogWrite("EXPERIMENT_LINEARNI_VYBER_STIMULU: " & tmp_stimul_idx)
+      ExpLogWrite("LINEARNI_STIMUL" & ";" & tmp_stimul_idx & ";" & "NULL" & ";" & "NaN")  
       ENDIF 
       IF (tmp_stimul_last = tmp_stimul_idx) AND (konfigurace_experiment_neopakovat = TRUE) THEN 
-        ExpLogWrite("EXPERIMENT_OPAKOVANI_STIMULU: " & tmp_stimul_idx & " GENERUJI_NOVY")
+'        ExpLogWrite("EXPERIMENT_OPAKOVANI_STIMULU: " & tmp_stimul_idx & " GENERUJI_NOVY")
         GOTO exp_genstim
       ENDIF 
       tmp_stimul_last = tmp_stimul_idx
       IF (konfigurace_experiment_slot_enable_1 = FALSE) AND (tmp_stimul_idx = 1) THEN
-        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+'        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
         GOTO exp_genstim
       ENDIF 
       IF (konfigurace_experiment_slot_enable_2 = FALSE) AND (tmp_stimul_idx = 2) THEN 
-        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+'        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
         GOTO exp_genstim
       ENDIF 
       IF (konfigurace_experiment_slot_enable_3 = FALSE) AND (tmp_stimul_idx = 3) THEN 
-        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+'        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
         GOTO exp_genstim
       ENDIF 
       IF (konfigurace_experiment_slot_enable_4 = FALSE) AND (tmp_stimul_idx = 4) THEN 
-        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+'        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
         GOTO exp_genstim
       ENDIF 
       IF (konfigurace_experiment_slot_enable_5 = FALSE) AND (tmp_stimul_idx = 5) THEN 
-        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+'        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
         GOTO exp_genstim
       ENDIF 
       IF (konfigurace_experiment_slot_enable_6 = FALSE) AND (tmp_stimul_idx = 6) THEN 
-        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
+'        ExpLogWrite("EXPERIMENT_STIMUL: " & tmp_stimul_idx & " ZAKAZAN, GENERUJI_NOVY") 
         GOTO exp_genstim
       ENDIF 
 
       Label23.Text = tmp_stimul_idx
+      exp_souhrn_stimul = tmp_stimul_idx
       
-      ExpLogWrite("EXPERIMENT_ZOBRAZENI_STIMULU: " & tmp_stimul_idx)
+      ExpLogWrite("ZOBRAZENI_STIMULU" & ";" & tmp_stimul_idx & ";" & "NULL" & ";" & "NaN")  
       ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/" & tmp_stimul_idx & ".bmp")
       Form1.stimul("/ratbox/stimuls/" & tmp_stimul_idx & ".bmp")
       WAIT 
 
       IF konfigurace_experiment_casovani = TRUE THEN 
         IF tmp_stimul_idx = 1 THEN 
-          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s1)
+          ExpLogWrite("CAS_ZOBRAZENI_STIMULU" & ";" & (konfigurace_experiment_casovani_s1) & ";" & "NULL" & ";" & "NaN")  
           Label26.BackColor = Color.Green
-          Pauza(konfigurace_experiment_casovani_s1)
+          PauzaMilis(konfigurace_experiment_casovani_s1)
           Label26.BackColor = Color.Background
         ENDIF   
         IF tmp_stimul_idx = 2 THEN 
-          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s2)
+          ExpLogWrite("CAS_ZOBRAZENI_STIMULU" & ";" & (konfigurace_experiment_casovani_s2) & ";" & "NULL" & ";" & "NaN")  
           Label27.BackColor = Color.Green
-          Pauza(konfigurace_experiment_casovani_s2)
+          PauzaMilis(konfigurace_experiment_casovani_s2)
           Label27.BackColor = Color.Background
         ENDIF   
         IF tmp_stimul_idx = 3 THEN 
-          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s3)
+          ExpLogWrite("CAS_ZOBRAZENI_STIMULU" & ";" & (konfigurace_experiment_casovani_s3) & ";" & "NULL" & ";" & "NaN")  
           Label28.BackColor = Color.Green
-          Pauza(konfigurace_experiment_casovani_s3)
+          PauzaMilis(konfigurace_experiment_casovani_s3)
           Label28.BackColor = Color.Background
         ENDIF   
         IF tmp_stimul_idx = 4 THEN 
-          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s4)
+          ExpLogWrite("CAS_ZOBRAZENI_STIMULU" & ";" & (konfigurace_experiment_casovani_s4) & ";" & "NULL" & ";" & "NaN")  
           Label29.BackColor = Color.Green
-          Pauza(konfigurace_experiment_casovani_s4)
+          PauzaMilis(konfigurace_experiment_casovani_s4)
           Label29.BackColor = Color.Background
         ENDIF   
         IF tmp_stimul_idx = 5 THEN 
-          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s5)
+          ExpLogWrite("CAS_ZOBRAZENI_STIMULU" & ";" & (konfigurace_experiment_casovani_s5) & ";" & "NULL" & ";" & "NaN")  
           Label30.BackColor = Color.Green
-          Pauza(konfigurace_experiment_casovani_s5)
+          PauzaMilis(konfigurace_experiment_casovani_s5)
           Label30.BackColor = Color.Background
         ENDIF   
         IF tmp_stimul_idx = 6 THEN 
-          ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_casovani_s6)
+          ExpLogWrite("CAS_ZOBRAZENI_STIMULU" & ";" & (konfigurace_experiment_casovani_s6) & ";" & "NULL" & ";" & "NaN")  
           Label31.BackColor = Color.Green
-          Pauza(konfigurace_experiment_casovani_s6)
+          PauzaMilis(konfigurace_experiment_casovani_s6)
           Label31.BackColor = Color.Background
         ENDIF   
       ELSE 
         Label12.BackColor = Color.Green
-        ExpLogWrite("EXPERIMENT_CAS_ZOBRAZENI_STIMULU: " & konfigurace_experiment_cas_zobrazeni_stimulu)
-        Pauza(konfigurace_experiment_cas_zobrazeni_stimulu)      
+        ExpLogWrite("CAS_ZOBRAZENI_STIMULU" & ";" & (konfigurace_experiment_cas_zobrazeni_stimulu) & ";" & "NULL" & ";" & "NaN")  
+        PauzaMilis(konfigurace_experiment_cas_zobrazeni_stimulu)      
         Label12.BackColor = Color.Background
       ENDIF 
       
       IF konfigurace_experiment_vypni_stimul = TRUE THEN 
         ChkZhasniStimul.BackColor = Color.Green
-        ExpLogWrite("EXPERIMENT_ZHASNUTI_STIMULU")
+        ExpLogWrite("ZHASNUTI_STIMULU" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
         Form1.stimul("/ratbox/stimuls/clear.bmp")
         ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
         ChkZhasniStimul.BackColor = Color.Background
@@ -915,22 +1404,22 @@ PUBLIC SUB BtnPreStart_Click()
       
       IF konfigurace_experiment_vypni_stimul_pauza_enable = TRUE THEN 
         Label13.BackColor = Color.Green
-        ExpLogWrite("EXPERIMENT_CAS_BEZ_STIMULU: " & konfigurace_experiment_cas_zhasnuteho_stimulu)
-        Pauza(konfigurace_experiment_cas_zhasnuteho_stimulu)
+        ExpLogWrite("CAS_ZHASLEHO_STIMULU" & ";" & (konfigurace_experiment_cas_zhasnuteho_stimulu) & ";" & "NULL" & ";" & "NaN")  
+        PauzaMilis(konfigurace_experiment_cas_zhasnuteho_stimulu)
         Label13.BackColor = Color.Background
       ENDIF       
       
-      ExpLogWrite("EXPERIMENT_OTEVRENI_DVERI")
+      ExpLogWrite("OTEVRENI_DVERI" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
       LabelPre6.BackColor = Color.Green
       AparaturaOtevriDvere()
       Pauza(3)
-      ExpLogWrite("EXPERIMENT_DVERE_OTEVRENY")
+      ExpLogWrite("DVERE_OTEVRENY" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
       LabelPre6.BackColor = Color.Background
       
       LabelPre7.BackColor = Color.Green
       stav_sloty = 0
       InputBlock = FALSE
-      ExpLogWrite("EXPERIMENT_CEKANI_NA_REAKCI_POTKANA")
+      ExpLogWrite("CEKANI_REAKCE" & ";" & "NaN" & ";" & "TIMEOUT" & ";" & (konfigurace_timeout * 1000))  
       TimeoutCountingStart()
       WHILE (stav_sloty = 0) AND (konfigurace_timeout > buffer_timeout)
         WAIT 
@@ -940,51 +1429,78 @@ PUBLIC SUB BtnPreStart_Click()
       buffer_sloty_aktual_state = stav_sloty
       stav_sloty = 0
 
+      IF konfigurace_experiment_vypni_stimul_poakci = TRUE THEN 
+        ChkZhasniStimulPoAkci.BackColor = Color.Green
+        ExpLogWrite("ZHASNUTI_STIMULU" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
+        Form1.stimul("/ratbox/stimuls/clear.bmp")
+        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
+        ChkZhasniStimulPoAkci.BackColor = Color.Background
+      ENDIF
+
+      IF buffer_sloty_aktual_state > 0 THEN 
+        exp_souhrn_odpoved = buffer_sloty_aktual_state
+        exp_stat_souhrn[exp_souhrn_stimul, exp_souhrn_odpoved] = exp_stat_souhrn[exp_souhrn_stimul, exp_souhrn_odpoved] + 1
+        exp_stat_aktivita[buffer_sloty_aktual_state] = exp_stat_aktivita[buffer_sloty_aktual_state] + 1 
+      ENDIF 
 
       IF buffer_sloty_aktual_state = 0 THEN 
-        ExpLogWrite("EXPERIMENT_TIMEOUT")  
+          ExpLogWrite("TIMEOUT" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")
+          exp_stat_timeout = exp_stat_timeout + 1  
         GOTO exp_reset
       ENDIF 
       
-      ExpLogWrite("EXPERIMENT_REAKCE_POTKANA: " & buffer_sloty_aktual_state)
-
+        ExpLogWrite("REAKCE" & ";" & buffer_sloty_aktual_state & ";" & "OCEKAVANO" & ";" & tmp_stimul_idx)
+        'exp_stat_aktivita[buffer_sloty_aktual_state] = exp_stat_aktivita[buffer_sloty_aktual_state] + 1  
+      
       IF buffer_sloty_aktual_state <> tmp_stimul_idx THEN 
-        ExpLogWrite("EXPERIMENT_POKTKAN_SPATNA_VOLBA: " & buffer_sloty_aktual_state & " ,OCEKAVANO: " & tmp_stimul_idx)
+'        ExpLogWrite("EXPERIMENT_POKTKAN_SPATNA_VOLBA: " & buffer_sloty_aktual_state & " ,OCEKAVANO: " & tmp_stimul_idx)
         GOTO exp_reset
       ENDIF       
-      
       IF buffer_sloty_aktual_state = tmp_stimul_idx THEN
-        ExpLogWrite("EXPERIMENT_POTKAN_SPRAVNA_VOLBA: " & buffer_sloty_aktual_state)
-        ExpLogWrite("EXPERIMENT_NASTAVUJI_PITKO: " & tmp_stimul_idx)
+'        ExpLogWrite("EXPERIMENT_POTKAN_SPRAVNA_VOLBA: " & buffer_sloty_aktual_state)
+        ExpLogWrite("PITKO" & ";" & tmp_stimul_idx & ";" & "NULL" & ";" & "NaN")
+        exp_stat_ciklus_real = exp_stat_ciklus_real + 1  
         LabelPre8.BackColor = Color.Green
         AparaturaNastavPitko(tmp_stimul_idx)
         Pauza(3)
         LabelPre8.BackColor = Color.Background
-        ExpLogWrite("EXPERIMENT_PAUZA_NA_PITI: " & konfigurace_experiment_cas_piti)
+        ExpLogWrite("CAS_PITI" & ";" & (konfigurace_experiment_cas_piti) & ";" & "NULL" & ";" & "NaN")  
         Label36.BackColor = Color.Green
-        Pauza(konfigurace_experiment_cas_piti)
+        PauzaMilis(konfigurace_experiment_cas_piti)
         Label36.BackColor = Color.Background 
       ENDIF 
-            
       exp_reset:
-      ExpLogWrite("EXPERIMENT_RESET_APARATURY")
+      ExpLogWrite("RESET" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
       Label20.BackColor = Color.Green
+
+      IF konfigurace_experiment_vypni_stimul_prereset = TRUE THEN 
+        ChkZhasniStimulPreReset.BackColor = Color.Green
+        ExpLogWrite("ZHASNUTI_STIMULU" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
+        Form1.stimul("/ratbox/stimuls/clear.bmp")
+        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
+        ChkZhasniStimulPreReset.BackColor = Color.Background
+      ENDIF
+
+' RESET APARATURY
+
       AparaturaReset()
       Pauza(3)
       Label20.BackColor = Color.Background
-      
       IF konfigurace_experiment_cas_dalsi_ciklus > 0 THEN 
-        ExpLogWrite("EXPERIMENT_PAUZA_PRED_DALSIM_CYKLEM: " & konfigurace_experiment_cas_dalsi_ciklus)
+        ExpLogWrite("CAS_DALSI_CYKLUS" & ";" & (konfigurace_experiment_cas_dalsi_ciklus) & ";" & "NULL" & ";" & "NaN")  
         Label25.BackColor = Color.Green
-        Pauza(konfigurace_experiment_cas_dalsi_ciklus)
+        PauzaMilis(konfigurace_experiment_cas_dalsi_ciklus)
         Label25.BackColor = Color.Background
       ENDIF 
-      
-      ExpLogWrite("EXPERIMENT_KONEC_CYKLU: " & tmp_cyklus)
+'      ExpLogWrite("EXPERIMENT_KONEC_CYKLU: " & tmp_cyklus)
+      exp_stat_ciklus = exp_stat_ciklus + 1
       tmp_cyklus = tmp_cyklus + 1
     WEND
-    ExpLogWrite("EXPERIMENT_KONEC")
+    Form1.stimul("/ratbox/stimuls/clear.bmp")
+    ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
+    ExpLogWrite("KONEC" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")  
     SysLogWrite("EXPERIMENT_KONEC") 
+    ExpStatWrite()
     TimerExperimentMils.Enabled = FALSE
   ENDIF 
 
@@ -1187,27 +1703,56 @@ DIM arr_strings AS String[]
     IF linc = 30 THEN mod_idx = Val(lin)
     IF (linc = 30) AND (lin = "0") THEN BtnMod.Text = "PreLearning"  
     IF (linc = 30) AND (lin = "1") THEN BtnMod.Text = "Experiment"  
+    IF (linc = 31) AND (lin = "True") THEN ChkTimeoutOpakReset.Value = TRUE
+    IF (linc = 31) AND (lin = "False") THEN ChkTimeoutOpakReset.Value = FALSE
+    IF (linc = 32) AND (lin = "True") THEN ChkZhasniStimulPreReset.Value = TRUE
+    IF (linc = 32) AND (lin = "False") THEN ChkZhasniStimulPreReset.Value = FALSE
+    IF (linc = 33) AND (lin = "True") THEN ChkZhasniStimulPoAkci.Value = TRUE
+    IF (linc = 33) AND (lin = "False") THEN ChkZhasniStimulPoAkci.Value = FALSE
     linc = linc + 1
   NEXT 
   SysLogWrite("PARAMETRY_PROFILU_NASTAVENY")
 END
 
 PUBLIC SUB PosliInfo()
-  
     Form1.cyklusinfo("Cyklus:" & Str(tmp_cyklus + 1) & "/" & Str(konfigurace_pocet_cyklu) & "  PauzaTMR:" & Str(buffer_casovac) & "  TimeoutTMR:" & Str(buffer_timeout))
-
-  
 END
 
 
 PUBLIC SUB remstart()
-  
   BtnPreStart_Click()
-  
 END
 
 PUBLIC SUB TimerExperimentMils_Timer()
-
   tmp_mils = tmp_mils + 1
+END
 
+PUBLIC FUNCTION TestNastaveniExpCasu() AS Boolean
+  DIM test AS Boolean
+  test = TRUE
+  IF Val(ExpTxtS1Time.Text) < 10 THEN test = FALSE
+  IF Val(ExpTxtS2Time.Text) < 10 THEN test = FALSE
+  IF Val(ExpTxtS3Time.Text) < 10 THEN test = FALSE
+  IF Val(ExpTxtS4Time.Text) < 10 THEN test = FALSE
+  IF Val(ExpTxtS5Time.Text) < 10 THEN test = FALSE
+  IF Val(ExpTxtS6Time.Text) < 10 THEN test = FALSE
+  IF Val(ExperimentTxtTime0.Text) < 10 THEN test = FALSE
+  IF Val(ExperimentTxtTime1.Text) < 10 THEN test = FALSE
+  IF Val(ExperimentTxtTime2.Text) < 10 THEN test = FALSE
+  IF Val(ExperimentTxtTime3.Text) < 10 THEN test = FALSE
+  IF test = TRUE THEN 
+    RETURN TRUE
+  ELSE 
+    RETURN FALSE
+  ENDIF   
+END
+
+PUBLIC SUB ExperimentTxtTime2_KeyPress()
+END
+
+PUBLIC SUB TimerMilis_Timer()
+  buffer_casovac_milis = buffer_casovac_milis + 1
+  TxtInfoCasovacMilis.text = Str(buffer_casovac_milis) * 10
+  PosliInfo()
+  WAIT
 END

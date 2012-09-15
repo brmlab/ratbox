@@ -1,14 +1,14 @@
 # Gambas Project File 2.0
-# Compiled with Gambas 2.21.0
+# Compiled with Gambas 2.23.1
 Title=RatBox
 Startup=FMain
-Version=0.0.1
+Version=0.0.9
 Library=gb.gui
 Library=gb.form
 Library=gb.net
 TabSize=2
+ExecPath=/home/tomsuch/Desktop/RatBox.gambas
 SourcePath=/home/tomsuch/Desktop
 Maintainer=tomsuch
 Address=tomsuch@IceSpirit
-Url=http://www.endoftheinternet.com/
 License=General Public Licence
