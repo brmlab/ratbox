@@ -1,14 +1,13 @@
-# Gambas Project File 2.0
-# Compiled with Gambas 2.23.1
+# Gambas Project File 3.0
+# Compiled with Gambas 3.1.1
 Title=RatBox
 Startup=FMain
-Version=0.0.9
-Library=gb.gui
-Library=gb.form
-Library=gb.net
+Version=0.0.10
+Component=gb.gui
+Component=gb.form
+Component=gb.net
 TabSize=2
-ExecPath=/home/tomsuch/Desktop/RatBox.gambas
-SourcePath=/home/tomsuch/Desktop
 Maintainer=tomsuch
 Address=tomsuch@IceSpirit
 License=General Public Licence
+Packager=1

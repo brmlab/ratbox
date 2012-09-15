@@ -1,0 +1,46 @@
+' Gambas class file
+
+
+Public Sub Form_Open()
+Wait
+  PictureBox1.Width = Form1.Width
+  PictureBox1.Height = Form1.Height
+Wait
+End
+
+Public Sub stimul(xxx As String)
+  Wait
+  PictureBox1.Picture = Picture.Load(xxx)
+  Wait
+End
+
+Public Sub loginfo(aaa As String)
+  Label1.Text = aaa
+End
+Public Sub cyklusinfo(bbb As String)
+  label2.Text = bbb
+End
+
+Public Sub PictureBox1_DblClick()
+  Form1.FullScreen = False
+  Form1.Visible = False
+  FMain.Visible = True
+  Form1.Close
+Wait
+End
+
+Public Sub Form_Resize()
+  PictureBox1.Width = Form1.Width
+  PictureBox1.Height = Form1.Height
+End
+
+Public Sub Form_Show()
+  Wait
+    PictureBox1.Width = Form1.Width
+    PictureBox1.Height = Form1.Height
+  Wait
+End
+
+Public Sub PictureBox1_Menu()
+  FMain.remstart()
+End
