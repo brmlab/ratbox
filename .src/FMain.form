@@ -1,752 +1,759 @@
 # Gambas Form File 3.0
-{ Form Form 
+
+{ Form Form
   Move(0,0,1400,798)
   #Scaled = False
   Border = False
   FullScreen = True
-  { BtnKonec Button 
+  { BtnKonec Button
     Move(1162,7,70,21)
     Text = ("KONEC")
   }
-  { TxtSysTime TextBox 
+  { TxtSysTime TextBox
     Move(1015,7,140,21)
     Alignment = Align.Center
   }
-  { TimerSystime #Timer 
-    #MoveScaled(0,0)
+  { TimerSystime #Timer
     Enabled = True
     Delay = 250
   }
-  { TxtSysLog TextArea 
+  { TxtSysLog TextArea
     Move(14,49,679,112)
     ReadOnly = True
     Wrap = True
     ScrollBar = Scroll.Vertical
   }
-  { TxtWDT TextBox 
+  { TxtWDT TextBox
     Move(959,7,49,21)
     Enabled = False
     Text = ("WDT")
     Alignment = Align.Center
   }
-  { LabelPre Label 
+  { LabelPre Label
     Move(35,182,77,35)
     ToolTip = ("Otevreni dvirek")
     Text = ("OTEVRENI\nDVERI")
     Alignment = Align.Center
   }
-  { LabelPre2 Label 
+  { LabelPre2 Label
     Move(196,175,63,63)
     ToolTip = ("Ceka se az potkan zacumakuje")
     Text = ("CEKANI\nAKCE\nPOTKAN")
     Alignment = Align.Center
   }
-  { LabelPreFrm2 Label 
+  { LabelPreFrm2 Label
     Move(266,196,70,14)
     Text = ("------------>")
     Alignment = Align.Center
   }
-  { LabelPre3 Label 
+  { LabelPre3 Label
     Move(343,175,84,63)
     ToolTip = ("Pitko se nastavi do pozice zacumakovani")
     Text = ("NASTAVENI\nPITKA")
     Alignment = Align.Center
   }
-  { LabelPreFrm3 Label 
+  { LabelPreFrm3 Label
     Move(602,231,28,63)
     Text = (" |\n |\n |\n")
     Alignment = Align.Center
   }
-  { TxtPreCasPiti TextBox 
+  { TxtPreCasPiti TextBox
     Move(574,189,70,28)
     Text = ("10")
     Alignment = Align.Center
   }
-  { Label1 Label 
+  { Label1 Label
     Move(511,189,56,28)
     Text = ("Cas piti")
   }
-  { Label2 Label 
+  { Label2 Label
     Move(658,189,28,28)
     Text = ("sec")
   }
-  { LabelPreFrm5 Label 
+  { LabelPreFrm5 Label
     Move(441,301,189,14)
     Text = ("<-----------------------------------------\n")
     Alignment = Align.Center
   }
-  { LabelPreFrm1 Label 
+  { LabelPreFrm1 Label
     Move(119,196,70,14)
     Text = ("------------>")
     Alignment = Align.Center
   }
-  { LabelPreFrm7 Label 
+  { LabelPreFrm7 Label
     Move(434,196,70,14)
     Text = ("------------>")
     Alignment = Align.Center
   }
-  { LabelPre5 Label 
+  { LabelPre5 Label
     Move(371,294,63,35)
     ToolTip = ("Nastaveni pitek do vychozich pozic")
     Text = ("RESET")
     Alignment = Align.Center
   }
-  { LabelPreFrm6 Label 
+  { LabelPreFrm6 Label
     Move(63,224,28,42)
     Text = ("|\n|\n")
     Alignment = Align.Center
   }
-  { ChkPreNeopakovat CheckBox 
+  { ChkPreNeopakovat CheckBox
     Move(168,238,119,28)
     ToolTip = ("Zakaze opakovani stejnych pitek 2x po sobe")
     Text = ("NEOPAKOVAT")
   }
-  { BtnPreStart Button 
+  { BtnPreStart Button
     Move(910,315,70,21)
     Text = ("START")
   }
-  { BtnPreStop Button 
+  { BtnPreStop Button
     Move(994,315,70,21)
     Text = ("STOP")
   }
-  { BtnSZ1 Button 
+  { BtnSZ1 Button
     Move(812,154,28,21)
     ToolTip = ("Simuluje zacumakovani potkana")
     Text = ("S1")
   }
-  { BtnSZ2 Button 
+  { BtnSZ2 Button
     Move(812,182,28,21)
     ToolTip = ("Simuluje zacumakovani potkana")
     Text = ("S2")
   }
-  { BtnSZ3 Button 
+  { BtnSZ3 Button
     Move(812,210,28,21)
     ToolTip = ("Simuluje zacumakovani potkana")
     Text = ("S3")
   }
-  { BtnSZ4 Button 
+  { BtnSZ4 Button
     Move(847,154,28,21)
     ToolTip = ("Simuluje zacumakovani potkana")
     Text = ("S4")
   }
-  { BtnSZ5 Button 
+  { BtnSZ5 Button
     Move(847,182,28,21)
     ToolTip = ("Simuluje zacumakovani potkana")
     Text = ("S5")
   }
-  { BtnSZ6 Button 
+  { BtnSZ6 Button
     Move(847,210,28,21)
     ToolTip = ("Simuluje zacumakovani potkana")
     Text = ("S6")
   }
-  { TxtPocetCiklu TextBox 
+  { TxtPocetCiklu TextBox
     Move(714,287,84,21)
     Text = ("10")
     Alignment = Align.Center
   }
-  { Label5 Label 
+  { Label5 Label
     Move(714,245,84,21)
     Text = ("Pocet cyklu:")
     Alignment = Align.Center
   }
-  { TxtInfoCasovac TextBox 
+  { TxtInfoCasovac TextBox
     Move(385,7,70,21)
     Text = ("0")
     Alignment = Align.Center
     ReadOnly = True
   }
-  { Label6 Label 
+  { Label6 Label
     Move(315,7,63,21)
     Text = ("Casovac")
     Alignment = Align.Center
   }
-  { TxtPrePauza TextBox 
+  { TxtPrePauza TextBox
     Move(35,301,84,21)
     Text = ("10")
     Alignment = Align.Center
   }
-  { ChkPrePauza CheckBox 
+  { ChkPrePauza CheckBox
     Move(35,273,105,21)
     ToolTip = ("Zapne pauzu mezi visualni stimulaci\na experimentem.\nZa jakou dobu se zacne smicka\nod zobrazeni stimulacniho obrazce")
     Text = ("Pauza:")
   }
-  { Label7 Label 
+  { Label7 Label
     Move(126,301,28,21)
     Text = ("sec")
   }
-  { ExperimentPicture PictureBox 
+  { ExperimentPicture PictureBox
     Move(14,434,161,126)
     Background = &H0000FF&
     Stretch = True
     Alignment = Align.Center
   }
-  { ExperimentTxtTime0 TextBox 
+  { ExperimentTxtTime0 TextBox
     Move(217,448,63,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { Label8 Label 
+  { Label8 Label
     Move(182,441,35,28)
     Text = ("--->")
     Alignment = Align.Center
   }
-  { ChkZhasniStimul CheckBox 
+  { ChkZhasniStimul CheckBox
     Move(357,434,70,42)
     Text = ("Vypni\nstimul")
   }
-  { Label9 Label 
+  { Label9 Label
     Move(315,448,35,14)
     Text = ("--->")
     Alignment = Align.Center
   }
-  { ExperimentTxtTime1 TextBox 
+  { ExperimentTxtTime1 TextBox
     Move(476,448,63,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { Label10 Label 
+  { Label10 Label
     Move(434,441,28,28)
     Text = ("--->")
   }
-  { ChkVypStimulPauza CheckBox 
+  { ChkVypStimulPauza CheckBox
     Move(469,427,98,14)
     Text = ("ZAPNUTO")
   }
-  { Label12 Label 
+  { Label12 Label
     Move(210,483,112,56)
     Text = ("CAS\nZOBRAZENI\nSTIMULU")
     Alignment = Align.Center
   }
-  { Label13 Label 
+  { Label13 Label
     Move(476,483,84,56)
     Text = ("CAS\nBEZ\nSTIMULU")
     Alignment = Align.Center
   }
-  { LabelPre6 Label 
+  { LabelPre6 Label
     Move(602,441,77,35)
     ToolTip = ("Otevreni dvirek")
     Text = ("OTEVRENI\nDVERI")
     Alignment = Align.Center
   }
-  { Label11 Label 
+  { Label11 Label
     Move(574,448,28,28)
     Text = ("--->")
   }
-  { TxtTimeout TextBox 
+  { TxtTimeout TextBox
     Move(819,287,77,21)
     Text = ("30")
     Alignment = Align.Center
   }
-  { Label14 Label 
+  { Label14 Label
     Move(798,245,112,21)
     Text = ("Cas na reakci:")
     Alignment = Align.Center
   }
-  { LabelPre7 Label 
+  { LabelPre7 Label
     Move(714,427,63,63)
     ToolTip = ("Ceka se az potkan zacumakuje")
     Text = ("CEKANI\nAKCE\nPOTKAN")
     Alignment = Align.Center
   }
-  { Label15 Label 
+  { Label15 Label
     Move(679,448,28,28)
     Text = ("--->")
   }
-  { Label16 Label 
+  { Label16 Label
     Move(882,448,133,21)
     Text = ("-----------------------------------------------")
   }
-  { LabelPreFrm11 Label 
+  { LabelPreFrm11 Label
     Move(994,469,28,21)
     Text = (" |\n")
     Alignment = Align.Center
   }
-  { LabelPreFrm12 Label 
+  { LabelPreFrm12 Label
     Move(875,469,28,21)
     Text = (" |\n")
     Alignment = Align.Center
   }
-  { LabelPreFrm13 Label 
+  { LabelPreFrm13 Label
     Move(938,469,28,21)
     Text = (" |\n")
     Alignment = Align.Center
   }
-  { Label17 Label 
+  { Label17 Label
     Move(868,497,42,21)
     Text = ("OK")
     Alignment = Align.Center
   }
-  { Label18 Label 
+  { Label18 Label
     Move(938,497,35,21)
     Text = ("KO")
     Alignment = Align.Center
   }
-  { Label19 Label 
+  { Label19 Label
     Move(973,497,70,21)
     Text = ("TIMEOUT")
     Alignment = Align.Center
   }
-  { Label20 Label 
+  { Label20 Label
     Move(511,651,70,21)
     Text = ("RESET")
     Alignment = Align.Center
   }
-  { LabelPreFrm14 Label 
+  { LabelPreFrm14 Label
     Move(994,525,28,140)
     Text = ("|\n|\n|\n|\n|\n|\n|\n|\n")
     Alignment = Align.Center
   }
-  { Label21 Label 
+  { Label21 Label
     Move(749,651,259,14)
     Text = ("-------------------------------------------------------------------------------------------------")
     Alignment = Align.Center
   }
-  { LabelPreFrm15 Label 
+  { LabelPreFrm15 Label
     Move(945,518,28,140)
     Text = ("|\n|\n|\n|\n|\n|\n|")
     Alignment = Align.Center
   }
-  { Label22 Label 
+  { Label22 Label
     Move(161,651,336,21)
     Text = ("----------------------------------------------------------------------------------------------------------")
     Alignment = Align.Center
   }
-  { ExperimentTxtTime2 TextBox 
+  { ExperimentTxtTime2 TextBox
     Move(42,602,84,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { LabelPre8 Label 
+  { LabelPre8 Label
     Move(847,553,84,35)
     ToolTip = ("Pitko se nastavi do pozice zacumakovani")
     Text = ("NASTAVENI\nPITKA")
     Alignment = Align.Center
   }
-  { LabelPreFrm17 Label 
+  { LabelPreFrm17 Label
     Move(875,525,28,21)
     Text = (" |\n")
     Alignment = Align.Center
   }
-  { ExperimentTxtTime3 TextBox 
+  { ExperimentTxtTime3 TextBox
     Move(840,595,70,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { Label23 Label 
-    Move(126,378,63,49)
+  { Label23 Label
+    Move(144,368,63,49)
     Font = Font["Bold,+2"]
     Text = ("0")
     Alignment = Align.Center
   }
-  { TmrCasovac #Timer 
-    #MoveScaled(1,1)
+  { TmrCasovac #Timer
+    #Move(8,8)
   }
-  { TxtInfoTimeout TextBox 
+  { TxtInfoTimeout TextBox
     Move(532,7,70,21)
     Text = ("0")
     Alignment = Align.Center
   }
-  { Label24 Label 
+  { Label24 Label
     Move(469,7,56,21)
     Text = ("Timeout")
   }
-  { TxtCommPort TextBox 
+  { TxtCommPort TextBox
     Move(14,7,140,21)
     Text = ("/dev/ttyUSB0")
   }
-  { BtnPripoj Button 
+  { BtnPripoj Button
     Move(161,7,147,21)
     Text = ("Pripoj / Odpoj")
   }
-  { SerialPort1 #SerialPort 
-    #MoveScaled(2,2)
+  { SerialPort1 #SerialPort
+    #Move(16,16)
   }
-  { Separator1 Separator 
+  { Separator1 Separator
     Move(14,35,1218,7)
     Foreground = &H000000&
   }
-  { Separator2 Separator 
-    Move(7,357,1218,21)
+  { Separator2 Separator
+    Move(8,344,1218,21)
   }
-  { Separator3 Separator 
+  { Separator3 Separator
     Move(700,49,7,301)
   }
-  { CheckBox2 CheckBox 
+  { CheckBox2 CheckBox
     Move(770,7,21,21)
     Text = ("CheckBox2")
   }
-  { CheckBox3 CheckBox 
+  { CheckBox3 CheckBox
     Move(798,7,21,21)
     Text = ("CheckBox3")
   }
-  { CheckBox4 CheckBox 
+  { CheckBox4 CheckBox
     Move(826,7,21,21)
     Text = ("CheckBox4")
   }
-  { CheckBox5 CheckBox 
+  { CheckBox5 CheckBox
     Move(854,7,21,21)
     Text = ("CheckBox5")
   }
-  { CheckBox6 CheckBox 
+  { CheckBox6 CheckBox
     Move(882,7,21,21)
     Text = ("CheckBox6")
   }
-  { CheckBox7 CheckBox 
+  { CheckBox7 CheckBox
     Move(910,7,21,21)
     Text = ("CheckBox7")
   }
-  { Label25 Label 
+  { Label25 Label
     Move(42,630,105,56)
     Text = ("PAUZA\nMEZI\nZOBRAZENIMI")
     Alignment = Align.Center
   }
-  { Label26 Label 
+  { Label26 Label
     Move(1043,462,35,21)
     Text = ("1")
     Alignment = Align.Center
   }
-  { Label27 Label 
+  { Label27 Label
     Move(1043,497,35,21)
     Text = ("2")
     Alignment = Align.Center
   }
-  { Label28 Label 
+  { Label28 Label
     Move(1043,532,35,21)
     Text = ("3")
     Alignment = Align.Center
   }
-  { Label29 Label 
+  { Label29 Label
     Move(1043,567,35,21)
     Text = ("4")
     Alignment = Align.Center
   }
-  { Label30 Label 
+  { Label30 Label
     Move(1043,602,35,21)
     Text = ("5")
     Alignment = Align.Center
   }
-  { Label31 Label 
+  { Label31 Label
     Move(1043,637,35,21)
     Text = ("6")
     Alignment = Align.Center
   }
-  { ExpTxtS1Time TextBox 
+  { ExpTxtS1Time TextBox
     Move(1078,462,70,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { ExpTxtS2Time TextBox 
+  { ExpTxtS2Time TextBox
     Move(1078,497,70,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { ExpTxtS3Time TextBox 
+  { ExpTxtS3Time TextBox
     Move(1078,532,70,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { ExpTxtS4Time TextBox 
+  { ExpTxtS4Time TextBox
     Move(1078,567,70,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { ExpTxtS5Time TextBox 
+  { ExpTxtS5Time TextBox
     Move(1078,602,70,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { ExpTxtS6Time TextBox 
+  { ExpTxtS6Time TextBox
     Move(1078,637,70,21)
     Text = ("10000")
     Alignment = Align.Center
   }
-  { ExpChkSTime CheckBox 
+  { ExpChkSTime CheckBox
     Move(1190,462,56,28)
     Text = ("ZAP")
     Value = CheckBox.True
   }
-  { ExpChkEnableTiming CheckBox 
+  { ExpChkEnableTiming CheckBox
     Move(1085,427,147,21)
     Text = ("Zapnout Casovani")
   }
-  { ExpChkSTime2 CheckBox 
+  { ExpChkSTime2 CheckBox
     Move(1190,497,56,28)
     Text = ("ZAP")
     Value = CheckBox.True
   }
-  { ExpChkSTime3 CheckBox 
+  { ExpChkSTime3 CheckBox
     Move(1190,532,56,28)
     Text = ("ZAP")
     Value = CheckBox.True
   }
-  { ExpChkSTime4 CheckBox 
+  { ExpChkSTime4 CheckBox
     Move(1190,567,56,28)
     Text = ("ZAP")
     Value = CheckBox.True
   }
-  { ExpChkSTime5 CheckBox 
+  { ExpChkSTime5 CheckBox
     Move(1190,602,56,28)
     Text = ("ZAP")
     Value = CheckBox.True
   }
-  { ExpChkSTime6 CheckBox 
+  { ExpChkSTime6 CheckBox
     Move(1190,637,56,28)
     Text = ("ZAP")
     Value = CheckBox.True
   }
-  { ChkExpNahoda CheckBox 
-    Move(14,406,98,21)
+  { ChkExpNahoda CheckBox
+    Move(16,392,98,21)
     Text = ("NAHODNE")
   }
-  { ChkExpNeopakovat CheckBox 
-    Move(14,378,119,21)
+  { ChkExpNeopakovat CheckBox
+    Move(16,368,128,24)
     Text = ("NEOPAKOVAT")
   }
-  { BtnOpenDor Button 
+  { BtnOpenDor Button
     Move(714,98,35,21)
     Text = ("OD")
   }
-  { BtnCloseDor Button 
+  { BtnCloseDor Button
     Move(763,98,35,21)
     Text = ("CD")
   }
-  { BtnReset Button 
+  { BtnReset Button
     Move(714,210,84,21)
     Text = ("RESET")
   }
-  { BtnPitS Button 
+  { BtnPitS Button
     Move(714,126,35,21)
     Text = ("S1")
   }
-  { BtnPitS2 Button 
+  { BtnPitS2 Button
     Move(714,154,35,21)
     Text = ("S2")
   }
-  { BtnPitS3 Button 
+  { BtnPitS3 Button
     Move(714,182,35,21)
     Text = ("S3")
   }
-  { BtnPitS4 Button 
+  { BtnPitS4 Button
     Move(763,126,35,21)
     Text = ("S4")
   }
-  { BtnPitS5 Button 
+  { BtnPitS5 Button
     Move(763,154,35,21)
     Text = ("S5")
   }
-  { BtnPitS6 Button 
+  { BtnPitS6 Button
     Move(763,182,35,21)
     Text = ("S6")
   }
-  { Label32 Label 
+  { Label32 Label
     Move(728,49,140,42)
-    Text = ("Manu\xC3\xA1ln\xC3\xAD ovl\xC3\xA1d\xC3\xA1n\xC3\xAD\naparatury")
+    Text = ("Manuální ovládání\naparatury")
     Alignment = Align.Center
   }
-  { Separator4 Separator 
+  { Separator4 Separator
     Move(707,238,189,7)
   }
-  { BtnExpFull Button 
+  { BtnExpFull Button
     Move(14,567,161,21)
     Text = ("FULLSCREEN")
   }
-  { LabelPreFrm4 Label 
+  { LabelPreFrm4 Label
     Move(168,301,189,14)
     Text = ("<-----------------------------------------\n")
     Alignment = Align.Center
   }
-  { Separator5 Separator 
+  { Separator5 Separator
     Move(805,98,7,140)
   }
-  { Label3 Label 
+  { Label3 Label
     Move(812,98,70,14)
     Text = ("SIMULACE")
     Alignment = Align.Center
   }
-  { Label4 Label 
+  { Label4 Label
     Move(812,112,70,14)
     Text = ("AKCE")
     Alignment = Align.Center
   }
-  { Label35 Label 
+  { Label35 Label
     Move(812,126,70,21)
     Text = ("POTKANA")
     Alignment = Align.Center
   }
-  { ChkTimeout CheckBox 
+  { ChkTimeout CheckBox
     Move(812,266,91,14)
     Text = ("ZAPNUTO")
     Value = CheckBox.True
   }
-  { TxtInfoCyklus TextBox 
+  { TxtInfoCyklus TextBox
     Move(672,7,70,21)
     Text = ("0")
     Alignment = Align.Center
   }
-  { Label33 Label 
+  { Label33 Label
     Move(609,7,56,21)
     Text = ("Cyklus")
     Alignment = Align.Center
   }
-  { BtnMod Button 
+  { BtnMod Button
     Move(910,287,154,21)
     Text = ("PreLearning")
   }
-  { BtnKonfUloz Button 
+  { BtnKonfUloz Button
     Move(896,105,175,21)
     Text = ("ULOZ PARAMETRY")
   }
-  { TxtKonfigNazev TextBox 
+  { TxtKonfigNazev TextBox
     Move(896,77,175,21)
   }
-  { Label34 Label 
+  { Label34 Label
     Move(896,49,175,21)
-    Text = ("N\xC3\xA1zev konfigurace:")
+    Text = ("Název konfigurace:")
     Alignment = Align.Center
   }
-  { BtnNahrajKonfiguraci Button 
+  { BtnNahrajKonfiguraci Button
     Move(896,133,175,21)
     Text = ("NAHRAJ PARAMETRY")
   }
-  { BtnNastav Button 
+  { BtnNastav Button
     Move(714,315,182,21)
     Text = ("UPLATNI PARAMETRY")
   }
-  { TxtSessionID TextBox 
-    Move(616,385,126,21)
+  { TxtSessionID TextBox
+    Move(736,392,126,21)
     Text = ("SessionID")
   }
-  { TxtExperimentID TextBox 
-    Move(392,385,112,21)
+  { TxtExperimentID TextBox
+    Move(608,392,112,21)
     Text = ("ExperimentID")
   }
-  { TmrTimeout #Timer 
-    #MoveScaled(3,3)
+  { TmrTimeout #Timer
+    #Move(24,24)
   }
-  { ListBox1 ListBox 
+  { ListBox1 ListBox
     Move(1085,49,147,259)
   }
-  { Button1 Button 
+  { Button1 Button
     Move(1085,315,147,21)
     Text = ("OBNOV SEZNAM")
   }
-  { BtnSmazKonfiguraci Button 
+  { BtnSmazKonfiguraci Button
     Move(896,161,175,21)
     Text = ("SMAZAT KONFIGURACI")
   }
-  { Label36 Label 
+  { Label36 Label
     Move(833,623,105,21)
     Text = ("PAUZA NA PITI")
     Alignment = Align.Center
   }
-  { TimerExperimentMils #Timer 
-    #MoveScaled(4,4)
+  { TimerExperimentMils #Timer
+    #Move(32,32)
     Delay = 10
   }
-  { PictureLogo1 PictureBox 
+  { PictureLogo1 PictureBox
     Move(903,196,161,35)
     Stretch = True
   }
-  { Label38 Label 
+  { Label38 Label
     Move(910,238,161,42)
-    Text = ("Tom\xC3\xA1\xC5\xA1 Suchan 2011\ntomsuch@tomsuch.net")
+    Text = ("Tomáš Suchan 2011\ntomsuch@tomsuch.net")
     Alignment = Align.Center
   }
-  { Label39 Label 
-    Move(518,385,91,21)
-    Text = ("SESSION ID:")
+  { Label39 Label
+    Move(752,368,91,21)
+    Text = ("SESSION:")
     Alignment = Align.Center
   }
-  { Label40 Label 
-    Move(259,385,126,21)
-    Text = ("EXPERIMENT ID:")
+  { Label40 Label
+    Move(600,368,126,21)
+    Text = ("EXPERIMENT:")
     Alignment = Align.Center
   }
-  { Label37 Label 
-    Move(749,385,91,21)
-    Text = ("OBJECT ID:")
+  { Label37 Label
+    Move(888,368,91,21)
+    Text = ("OBJECT:")
     Alignment = Align.Center
   }
-  { TxtOjectID TextBox 
-    Move(847,385,126,21)
+  { TxtOjectID TextBox
+    Move(872,392,126,21)
     Text = ("ObjectID")
   }
-  { TimerMilis #Timer 
-    #MoveScaled(5,5)
+  { TimerMilis #Timer
+    #Move(40,40)
     Delay = 10
   }
-  { Label41 Label 
+  { Label41 Label
     Move(287,455,28,14)
     Text = ("ms")
   }
-  { Label42 Label 
+  { Label42 Label
     Move(546,455,28,14)
     Text = ("ms")
   }
-  { Label43 Label 
+  { Label43 Label
     Move(1155,574,28,14)
     Text = ("ms")
   }
-  { Label44 Label 
+  { Label44 Label
     Move(1155,609,28,14)
     Text = ("ms")
   }
-  { Label45 Label 
+  { Label45 Label
     Move(1155,539,28,14)
     Text = ("ms")
   }
-  { Label46 Label 
+  { Label46 Label
     Move(1155,504,28,14)
     Text = ("ms")
   }
-  { Label47 Label 
+  { Label47 Label
     Move(1155,469,28,14)
     Text = ("ms")
   }
-  { Label48 Label 
+  { Label48 Label
     Move(1155,644,28,14)
     Text = ("ms")
   }
-  { Label49 Label 
+  { Label49 Label
     Move(917,602,28,14)
     Text = ("ms")
   }
-  { Label50 Label 
+  { Label50 Label
     Move(133,609,35,14)
     Text = ("ms")
   }
-  { TxtInfoCasovacMilis TextBox 
+  { TxtInfoCasovacMilis TextBox
     Move(1106,385,84,21)
     Text = ("0")
     Alignment = Align.Center
   }
-  { Label51 Label 
+  { Label51 Label
     Move(1197,392,28,14)
     Text = ("ms")
   }
-  { Label52 Label 
+  { Label52 Label
     Move(1015,392,84,14)
     Text = ("Casovac(ms):")
   }
-  { ChkTimeoutOpakReset CheckBox 
+  { ChkTimeoutOpakReset CheckBox
     Move(168,273,217,14)
     Text = ("TIMEOUT = RESET OPAKOVANI")
   }
-  { ChkZhasniStimulPreReset CheckBox 
+  { ChkZhasniStimulPreReset CheckBox
     Move(672,637,70,42)
     Text = ("Vypni\nstimul")
   }
-  { Label53 Label 
+  { Label53 Label
     Move(588,651,63,14)
     Text = ("-------------------------------------------------------------------------------------------------")
     Alignment = Align.Center
   }
-  { ChkZhasniStimulPoAkci CheckBox 
+  { ChkZhasniStimulPoAkci CheckBox
     Move(805,441,70,42)
     Text = ("Vypni\nstimul")
   }
-  { Label54 Label 
+  { Label54 Label
     Move(770,448,28,28)
     Text = ("--->")
+  }
+  { TxtSkriptNazev TextBox
+    Move(216,368,175,21)
+  }
+  { BtnNahrajSkript Button
+    Move(216,392,175,21)
+    Text = ("NAHRAJ SKRIPT")
   }
 }

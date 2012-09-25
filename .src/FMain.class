@@ -14,6 +14,7 @@ Public konfigurace_experiment_cas_zhasnuteho_stimulu As Integer
 Public konfigurace_experiment_cas_piti As Integer
 Public konfigurace_experiment_cas_dalsi_ciklus As Integer
 Public konfigurace_experiment_nahoda As Boolean
+Public konfigurace_experiment_skript As New String[]
 Public konfigurace_experiment_neopakovat As Boolean
 Public konfigurace_experiment_vypni_stimul As Boolean
 Public konfigurace_experiment_vypni_stimul_pauza_enable As Boolean
@@ -1154,6 +1155,15 @@ Dim arr_strings As String[]
   SysLogWrite("PARAMETRY_OBNOVENY")
 End
 
+Public Sub BtnNahrajSkript_Click()
+  SysLogWrite("NAHRANI_SKRIPTU")
+  konfigurace_experiment_skript = Split(File.LOAD("/ratbox/skripty/" & TxtSkriptNazev.Text), "\n")
+  'konfigurace_experiment_skript contains one extra element at the end because the last line is terminated by a newline character
+  konfigurace_pocet_cyklu = konfigurace_experiment_skript.Length - 1
+  TxtPocetCiklu.Text = Str(konfigurace_pocet_cyklu)
+  SysLogWrite("SKRIPT_NAHRAN")
+End
+
 Public Sub TmrCasovac_Timer()
   buffer_casovac = buffer_casovac + 1
   TxtInfoCasovac.text = Str(buffer_casovac)
@@ -1337,7 +1347,9 @@ Dim exp_souhrn_odpoved As Integer
       TimerExperimentMils.Enabled = True
       exp_genstim:
       ExpLogWrite("CYKLUS" & ";" & tmp_cyklus & ";" & "NULL" & ";" & "NaN")
-      If konfigurace_experiment_nahoda = True Then
+      If konfigurace_experiment_skript.Length > 0 Then
+        tmp_stimul_idx = CInt(Val(konfigurace_experiment_skript[tmp_cyklus]))
+      Else If konfigurace_experiment_nahoda = True Then
         tmp_stimul_idx = Rnd(1, 7)
       'ExpLogWrite("NAHODNY_STIMUL" & ";" & tmp_stimul_idx & ";" & "NULL" & ";" & "NaN")  
       Else
