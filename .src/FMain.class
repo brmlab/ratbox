@@ -354,6 +354,13 @@ Dim StatTMP As String
       StatTMP = "FALSE"
     Endif
     Print #SysLogFile, "NASTAVENI_NAHODA_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL"
+    
+    If konfigurace_experiment_skript.Length > 0 Then
+      StatTMP = TxtSkriptNazev.Text
+    Else
+      StatTMP = "NULL"
+    Endif
+    Print #SysLogFile, "NASTAVENI_SKRIPT" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL"
 
     If konfigurace_experiment_neopakovat = True Then
       StatTMP = "TRUE"
@@ -1012,7 +1019,18 @@ Sub UlozDefoult()
   Print #DefKonfFile, TimeoutOpakReset
   Print #DefKonfFile, konfigurace_experiment_vypni_stimul_prereset
   Print #DefKonfFile, konfigurace_experiment_vypni_stimul_poakci
-
+  If ChkPipnout.Value Then
+    Print #DefKonfFile, "True"
+  Else
+    Print #DefKonfFile, "False"
+  Endif
+  Print #DefKonfFile, Str(TxtStimulyNazev.Text)
+  If ChkPreUkazStimul.Value Then
+    Print #DefKonfFile, "True"
+  Else
+    Print #DefKonfFile, "False"
+  Endif
+  Print #DefKonfFile, Str(TxtPreStimulyNazev.Text)
   Wait
   DefKonfFile.Close
 End
@@ -1080,7 +1098,18 @@ Sub UlozUserCfg(CfgName As String)
   Print #DefKonfFile, TimeoutOpakReset
   Print #DefKonfFile, konfigurace_experiment_vypni_stimul_prereset
   Print #DefKonfFile, konfigurace_experiment_vypni_stimul_poakci
-
+  If ChkPipnout.Value Then
+    Print #DefKonfFile, "True"
+  Else
+    Print #DefKonfFile, "False"
+  Endif
+  Print #DefKonfFile, Str(TxtStimulyNazev.Text)
+  If ChkPreUkazStimul.Value Then
+    Print #DefKonfFile, "True"
+  Else
+    Print #DefKonfFile, "False"
+  Endif
+  Print #DefKonfFile, Str(TxtPreStimulyNazev.Text)
   Wait
   DefKonfFile.Close
   
@@ -1150,6 +1179,12 @@ Dim arr_strings As String[]
     If (linc = 32) And (lin = "False") Then ChkZhasniStimulPreReset.Value = False
     If (linc = 33) And (lin = "True") Then ChkZhasniStimulPoAkci.Value = True
     If (linc = 33) And (lin = "False") Then ChkZhasniStimulPoAkci.Value = False
+    If (linc = 34) And (lin = "True") Then ChkPipnout.Value = True
+    If (linc = 34) And (lin = "False") Then ChkPipnout.Value = False
+    If linc = 35 Then TxtStimulyNazev.Text = lin
+    If (linc = 36) And (lin = "True") Then ChkPreUkazStimul.Value = True
+    If (linc = 36) And (lin = "False") Then ChkPreUkazStimul.Value = False
+    If linc = 37 Then TxtPreStimulyNazev.Text = lin
     linc = linc + 1
   Next
   SysLogWrite("PARAMETRY_OBNOVENY")
@@ -1188,6 +1223,13 @@ Dim exp_souhrn_odpoved As Integer
     PreStatInit()
     SysLogWrite("PRELEARNING_START")
     PreLogWrite("START" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")
+    If ChkPreUkazStimul.Value Then
+      ChkPreUkazStimul.Background = Color.Green
+      PreLogWrite("ZOBRAZENI_STIMULU" & ";" & "pre" & ";" & "SADA_STIMULU" & ";" & TxtPreStimulyNazev.Text)
+      Form1.stimul("/ratbox/stimuls" & TxtPreStimulyNazev.Text & "/pre.bmp")
+      ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls" & TxtPreStimulyNazev.Text & "/pre.bmp")
+    Endif
+
     While (tmp_cyklus < konfigurace_pocet_cyklu) And (STOP_State = False)
       PreLogWrite("CYKLUS" & ";" & tmp_cyklus & ";" & "NULL" & ";" & "NaN")
      ' PRELEARNING - KROK 1 - OTEVRENI DVERI START
@@ -1222,6 +1264,13 @@ Dim exp_souhrn_odpoved As Integer
       
       SysLogWrite("PRELEARNING_POTKAN_AKTIVITA_" & Str(buffer_sloty_aktual_state))
       pre_stat_aktivita[buffer_sloty_aktual_state] = pre_stat_aktivita[buffer_sloty_aktual_state] + 1
+
+      If ChkPreUkazStimul.Value Then
+        ChkPreUkazStimul.Background = Color.Background
+        PreLogWrite("ZHASNUTI_STIMULU" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")
+        Form1.stimul("/ratbox/stimuls" & TxtPreStimulyNazev.Text & "/clear.bmp")
+        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls" & TxtPreStimulyNazev.Text & "/clear.bmp")
+      Endif
 
       If buffer_sloty_aktual_state = 0 Then
         SysLogWrite("PRELEARNING_TIMEOUT")
@@ -1310,6 +1359,13 @@ Dim exp_souhrn_odpoved As Integer
       Pauza(3)
       ' [GB2:BCOL] LabelPre5.BackColor = Color.Background
       LabelPre5.Background = Color.Background
+
+      If ChkPreUkazStimul.Value Then
+        ChkPreUkazStimul.Background = Color.Green
+        PreLogWrite("ZOBRAZENI_STIMULU" & ";" & "pre" & ";" & "SADA_STIMULU" & ";" & TxtPreStimulyNazev.Text)
+        Form1.stimul("/ratbox/stimuls" & TxtPreStimulyNazev.Text & "/pre.bmp")
+        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls" & TxtPreStimulyNazev.Text & "/pre.bmp")
+      Endif
       
       If konfigurace_prelearning_pauza = True Then
         ' [GB2:BCOL] ChkPrePauza.BackColor = Color.Green
@@ -1390,9 +1446,16 @@ Dim exp_souhrn_odpoved As Integer
       Label23.Text = tmp_stimul_idx
       exp_souhrn_stimul = tmp_stimul_idx
       
-      ExpLogWrite("ZOBRAZENI_STIMULU" & ";" & tmp_stimul_idx & ";" & "NULL" & ";" & "NaN")
-      ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/" & tmp_stimul_idx & ".bmp")
-      Form1.stimul("/ratbox/stimuls/" & tmp_stimul_idx & ".bmp")
+      If (ChkPipnout.Value) Then
+        ExpLogWrite("AUDIO_SIGNALIZACE_STIMULU" & ";" & 1 & ";" & "NULL" & ";" & "NaN")
+        Shell ("/bin/echo -e '\\a' >/dev/tty12")
+      Else
+        ExpLogWrite("AUDIO_SIGNALIZACE_STIMULU" & ";" & 0 & ";" & "NULL" & ";" & "NaN")
+      Endif
+      
+      ExpLogWrite("ZOBRAZENI_STIMULU" & ";" & tmp_stimul_idx & ";" & "SADA_STIMULU" & ";" & TxtStimulyNazev.Text)
+      ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls" & TxtStimulyNazev.Text & "/" & tmp_stimul_idx & ".bmp")
+      Form1.stimul("/ratbox/stimuls" & TxtStimulyNazev.Text & "/" & tmp_stimul_idx & ".bmp")
       Wait
 
       If konfigurace_experiment_casovani = True Then
@@ -1457,8 +1520,8 @@ Dim exp_souhrn_odpoved As Integer
         ' [GB2:BCOL] ChkZhasniStimul.BackColor = Color.Green
         ChkZhasniStimul.Background = Color.Green
         ExpLogWrite("ZHASNUTI_STIMULU" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")
-        Form1.stimul("/ratbox/stimuls/clear.bmp")
-        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
+        Form1.stimul("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
+        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
         ' [GB2:BCOL] ChkZhasniStimul.BackColor = Color.Background
         ChkZhasniStimul.Background = Color.Background
       Endif
@@ -1500,8 +1563,8 @@ Dim exp_souhrn_odpoved As Integer
         ' [GB2:BCOL] ChkZhasniStimulPoAkci.BackColor = Color.Green
         ChkZhasniStimulPoAkci.Background = Color.Green
         ExpLogWrite("ZHASNUTI_STIMULU" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")
-        Form1.stimul("/ratbox/stimuls/clear.bmp")
-        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
+        Form1.stimul("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
+        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
         ' [GB2:BCOL] ChkZhasniStimulPoAkci.BackColor = Color.Background
         ChkZhasniStimulPoAkci.Background = Color.Background
       Endif
@@ -1551,8 +1614,8 @@ Dim exp_souhrn_odpoved As Integer
         ' [GB2:BCOL] ChkZhasniStimulPreReset.BackColor = Color.Green
         ChkZhasniStimulPreReset.Background = Color.Green
         ExpLogWrite("ZHASNUTI_STIMULU" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")
-        Form1.stimul("/ratbox/stimuls/clear.bmp")
-        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
+        Form1.stimul("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
+        ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
         ' [GB2:BCOL] ChkZhasniStimulPreReset.BackColor = Color.Background
         ChkZhasniStimulPreReset.Background = Color.Background
       Endif
@@ -1575,8 +1638,8 @@ Dim exp_souhrn_odpoved As Integer
       exp_stat_ciklus = exp_stat_ciklus + 1
       tmp_cyklus = tmp_cyklus + 1
     Wend
-    Form1.stimul("/ratbox/stimuls/clear.bmp")
-    ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls/clear.bmp")
+    Form1.stimul("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
+    ExperimentPicture.Picture = Picture.Load("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
     ExpLogWrite("KONEC" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")
     SysLogWrite("EXPERIMENT_KONEC")
     ExpStatWrite()
@@ -1609,11 +1672,11 @@ Public Sub BtnPreStop_Click()
 End
 
 Public Sub BtnExpFull_Click()
-  If mod_idx = 0 Then BtnMod_Click()
+  ' If mod_idx = 0 Then BtnMod_Click()
   FMain.Visible = False
   Form1.FullScreen = True
   Form1.Visible = True
-  Form1.stimul("/ratbox/stimuls/clear.bmp")
+  Form1.stimul("/ratbox/stimuls" & TxtStimulyNazev.Text & "/clear.bmp")
 End
 
 Public Sub BtnKonfUloz_Click()
@@ -1788,6 +1851,12 @@ Dim arr_strings As String[]
     If (linc = 32) And (lin = "False") Then ChkZhasniStimulPreReset.Value = False
     If (linc = 33) And (lin = "True") Then ChkZhasniStimulPoAkci.Value = True
     If (linc = 33) And (lin = "False") Then ChkZhasniStimulPoAkci.Value = False
+    If (linc = 34) And (lin = "True") Then ChkPipnout.Value = True
+    If (linc = 34) And (lin = "False") Then ChkPipnout.Value = False
+    If linc = 35 Then TxtStimulyNazev.Text = lin
+    If (linc = 36) And (lin = "True") Then ChkPreUkazStimul.Value = True
+    If (linc = 36) And (lin = "False") Then ChkPreUkazStimul.Value = False
+    If linc = 37 Then TxtPreStimulyNazev.Text = lin
     linc = linc + 1
   Next
   SysLogWrite("PARAMETRY_PROFILU_NASTAVENY")

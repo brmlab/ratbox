@@ -495,11 +495,11 @@
     Value = CheckBox.True
   }
   { ChkExpNahoda CheckBox
-    Move(16,392,98,21)
+    Move(21,392,98,21)
     Text = ("NAHODNE")
   }
   { ChkExpNeopakovat CheckBox
-    Move(16,368,128,24)
+    Move(21,371,128,24)
     Text = ("NEOPAKOVAT")
   }
   { BtnOpenDor Button
@@ -755,5 +755,24 @@
   { BtnNahrajSkript Button
     Move(216,392,175,21)
     Text = ("NAHRAJ SKRIPT")
+  }
+  { TxtStimulyNazev TextBox
+    Move(217,602,175,21)
+  }
+  { Label55 Label
+    Move(217,567,175,21)
+    Text = ("SADA STIMULU:")
+    Alignment = Align.Center
+  }
+  { ChkPipnout CheckBox
+    Move(21,413,98,21)
+    Text = ("PIPNOUT")
+  }
+  { ChkPreUkazStimul CheckBox
+    Move(420,238,168,21)
+    Text = ("UKAZ STIMUL, SADA:")
+  }
+  { TxtPreStimulyNazev TextBox
+    Move(420,273,175,21)
   }
 }
