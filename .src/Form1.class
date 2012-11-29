@@ -44,3 +44,13 @@ End
 Public Sub PictureBox1_Menu()
   FMain.remstart()
 End
+
+Public Sub Form_KeyPress()
+  If Key.Code = Key["0"] Or Key.Code = Key["KP_0"] Then FMain.AparaturaNastavPitko(0) 
+  If Key.Code = Key["1"] Or Key.Code = Key["KP_1"] Then FMain.AparaturaNastavPitko(1) 
+  If Key.Code = Key["2"] Or Key.Code = Key["KP_2"] Then FMain.AparaturaNastavPitko(2) 
+  If Key.Code = Key["3"] Or Key.Code = Key["KP_3"] Then FMain.AparaturaNastavPitko(3) 
+  If Key.Code = Key["4"] Or Key.Code = Key["KP_4"] Then FMain.AparaturaNastavPitko(4) 
+  If Key.Code = Key["5"] Or Key.Code = Key["KP_5"] Then FMain.AparaturaNastavPitko(5) 
+  If Key.Code = Key["6"] Or Key.Code = Key["KP_6"] Then FMain.AparaturaNastavPitko(6) 
+End
