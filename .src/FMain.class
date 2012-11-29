@@ -21,6 +21,7 @@ Public konfigurace_experiment_vypni_stimul_pauza_enable As Boolean
 Public konfigurace_experiment_casovani As Boolean
 Public konfigurace_experiment_vypni_stimul_prereset As Boolean
 Public konfigurace_experiment_vypni_stimul_poakci As Boolean
+Public konfigurace_experiment_prednastav_pitko As Boolean
 
 Public konfigurace_experiment_slot_enable_1 As Boolean
 Public konfigurace_experiment_slot_enable_2 As Boolean
@@ -412,6 +413,7 @@ Dim StatTMP As String
     Endif
     Print #SysLogFile, "NASTAVENI_SEPARATANI_CASOVANI_ENABLED" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL"
 
+
     If konfigurace_experiment_slot_enable_1 = True Then
       StatTMP = "TRUE"
     Else
@@ -454,6 +456,15 @@ Dim StatTMP As String
       StatTMP = "FALSE"
     Endif
     Print #SysLogFile, "NASTAVENI_CASOVANI_S6" & ";" & konfigurace_experiment_casovani_s6 & ";" & "SLOT_6_ENABLED" & ";" & StatTMP
+
+
+    If konfigurace_experiment_prednastav_pitko = True Then
+      StatTMP = "TRUE"
+    Else
+      StatTMP = "FALSE"
+    Endif
+    Print #SysLogFile, "NASTAVENI_PREDNASTAV_PITKO" & ";" & StatTMP & ";" & "NULL" & ";" & "NULL"
+
 
     Print #SysLogFile, "<FORMAT DAT>"
 
@@ -939,6 +950,9 @@ Public Sub VypisParametry()
   SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_4: " & Str(konfigurace_experiment_casovani_s4))
   SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_5: " & Str(konfigurace_experiment_casovani_s5))
   SysLogWrite("KONFIGURACE_EXPERIMENT_CASOVANI_SLOT_6: " & Str(konfigurace_experiment_casovani_s6))
+
+  If konfigurace_experiment_prednastav_pitko = True Then SysLogWrite("KONFIGURACE_EXPERIMENT_PREDNASTAV_PITKO: ZAPNUTO")
+  If konfigurace_experiment_prednastav_pitko = False Then SysLogWrite("KONFIGURACE_EXPERIMENT_PREDNASTAV_PITKO: VYPNUTO")
 End
 
 Public Sub UplatniParametry()
@@ -976,6 +990,7 @@ Public Sub UplatniParametry()
     konfigurace_experiment_casovani_s5 = Val(ExpTxtS5Time.Text)
     konfigurace_experiment_casovani_s6 = Val(ExpTxtS6Time.Text)
     TimeoutOpakReset = ChkTimeoutOpakReset.Value
+    konfigurace_experiment_prednastav_pitko = ChkPrednastavPitko.Value
   Else
     Message("! CHYBA ZADANEHO CASU: v rozliseni (ms) je minimalni hodnota 10")
   Endif
@@ -1031,6 +1046,7 @@ Sub UlozDefoult()
     Print #DefKonfFile, "False"
   Endif
   Print #DefKonfFile, Str(TxtPreStimulyNazev.Text)
+  Print #DefKonfFile, konfigurace_experiment_prednastav_pitko
   Wait
   DefKonfFile.Close
 End
@@ -1110,6 +1126,7 @@ Sub UlozUserCfg(CfgName As String)
     Print #DefKonfFile, "False"
   Endif
   Print #DefKonfFile, Str(TxtPreStimulyNazev.Text)
+  Print #DefKonfFile, konfigurace_experiment_prednastav_pitko
   Wait
   DefKonfFile.Close
   
@@ -1185,6 +1202,8 @@ Dim arr_strings As String[]
     If (linc = 36) And (lin = "True") Then ChkPreUkazStimul.Value = True
     If (linc = 36) And (lin = "False") Then ChkPreUkazStimul.Value = False
     If linc = 37 Then TxtPreStimulyNazev.Text = lin
+    If (linc = 38) And (lin = "True") Then ChkPrednastavPitko.Value = True
+    If (linc = 38) And (lin = "False") Then ChkPrednastavPitko.Value = False
     linc = linc + 1
   Next
   SysLogWrite("PARAMETRY_OBNOVENY")
@@ -1544,6 +1563,12 @@ Dim exp_souhrn_odpoved As Integer
       ' [GB2:BCOL] LabelPre6.BackColor = Color.Background
       LabelPre6.Background = Color.Background
       
+      If konfigurace_experiment_prednastav_pitko = True Then
+        ChkPrednastavPitko.Background = Color.Green
+        ExpLogWrite("PREDNASTAVENO_PITKO" & ";" & "NaN" & ";" & "NULL" & ";" & "NaN")
+        AparaturaNastavPitko(tmp_stimul_idx)
+      Endif
+      
       ' [GB2:BCOL] LabelPre7.BackColor = Color.Green
       LabelPre7.Background = Color.Green
       stav_sloty = 0
@@ -1622,6 +1647,7 @@ Dim exp_souhrn_odpoved As Integer
 
 ' RESET APARATURY
 
+      ChkPrednastavPitko.Background = Color.Background
       AparaturaReset()
       Pauza(3)
       ' [GB2:BCOL] Label20.BackColor = Color.Background
@@ -1857,6 +1883,8 @@ Dim arr_strings As String[]
     If (linc = 36) And (lin = "True") Then ChkPreUkazStimul.Value = True
     If (linc = 36) And (lin = "False") Then ChkPreUkazStimul.Value = False
     If linc = 37 Then TxtPreStimulyNazev.Text = lin
+    If (linc = 38) And (lin = "True") Then ChkPrednastavPitko.Value = True
+    If (linc = 38) And (lin = "False") Then ChkPrednastavPitko.Value = False
     linc = linc + 1
   Next
   SysLogWrite("PARAMETRY_PROFILU_NASTAVENY")

@@ -775,4 +775,8 @@
   { TxtPreStimulyNazev TextBox
     Move(420,273,175,21)
   }
+  { ChkPrednastavPitko CheckBox
+    Move(686,490,98,49)
+    Text = ("Prednastav\n   pitko")
+  }
 }
