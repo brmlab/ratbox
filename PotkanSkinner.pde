@@ -76,8 +76,10 @@ void loop_rw()
       case 'D': digitalWrite(door_pin, HIGH); break;
       case 'S': sid = 1; // fall through
       case 's': /* sid = 0; */ {
+	while (!Serial.available()) /* spin */;
         unsigned char pos = Serial.read();
-        servo[sid].write(servo_pos[sid][pos - '0']);
+	if (pos >= '0' && pos <= '3')
+		servo[sid].write(servo_pos[sid][pos - '0']);
       }
     }
   }
