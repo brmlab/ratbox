@@ -1863,7 +1863,7 @@ Dim arr_strings As String[]
 End
 
 Public Sub PosliInfo()
-    Form1.cyklusinfo("Cyklus:" & Str(tmp_cyklus + 1) & "/" & Str(konfigurace_pocet_cyklu) & "  PauzaTMR:" & Str(buffer_casovac) & "  TimeoutTMR:" & Str(buffer_timeout))
+    Form1.cyklusinfo("Cyklus:" & Str(tmp_cyklus + 1) & "/" & Str(konfigurace_pocet_cyklu) & "  PauzaTMR:" & Str(buffer_casovac) & "  TimeoutTMR:" & Str(buffer_timeout) & "  Slot:" & Str(stav_sloty))
 End
 
 
