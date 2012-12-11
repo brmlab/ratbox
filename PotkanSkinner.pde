@@ -53,7 +53,7 @@ if (digitalRead(6) == true) i = i + 8;
 if (digitalRead(7) == true) i = i + 16;
 if (digitalRead(8) == true) i = i + 32;
 
-    Serial.print(i, BIN);
+    Serial.write(i);
 }
 
 void loop_ro() 
